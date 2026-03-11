@@ -153,11 +153,21 @@ class VistaDividirArchivo(QWidget):
         config_lay.setContentsMargins(20, 16, 20, 16)
         config_lay.setSpacing(14)
 
+        config_header = QHBoxLayout()
+        config_header.setContentsMargins(0, 0, 0, 0)
         lbl_config = QLabel("Configuración")
         lbl_config.setFont(QFont("Segoe UI", 12, QFont.Bold))
         lbl_config.setStyleSheet(
             "color: #0098C4; background: transparent; border: none;")
-        config_lay.addWidget(lbl_config)
+        config_header.addWidget(lbl_config)
+        config_header.addStretch()
+        self._btn_modificar = QPushButton("Modificar")
+        self._btn_modificar.setFixedSize(90, 30)
+        self._btn_modificar.setFont(QFont("Segoe UI", 10))
+        self._btn_modificar.setCursor(Qt.PointingHandCursor)
+        self._btn_modificar.clicked.connect(self._toggle_config)
+        config_header.addWidget(self._btn_modificar)
+        config_lay.addLayout(config_header)
 
         row = QHBoxLayout()
         row.setSpacing(30)
@@ -183,6 +193,10 @@ class VistaDividirArchivo(QWidget):
         row.addStretch()
         config_lay.addLayout(row)
         outer.addWidget(config_frame)
+
+        # Bloquear configuración hasta que el usuario pulse Modificar
+        self._editando_config = False
+        self._set_config_editable(False)
         outer.addSpacing(28)
 
         # ── DropZone ──────────────────────────────────────────────────
@@ -294,6 +308,67 @@ class VistaDividirArchivo(QWidget):
         self._estado.setCurrentIndex(0)
         outer.addStretch()
 
+    # ── Configuración editable ──────────────────────────────────────
+    _STYLE_INP_LOCKED = """
+        QLineEdit {
+            border: 1.5px solid #DADADA;
+            border-radius: 8px;
+            padding: 0 10px;
+            background: #EEF8FC;
+            color: #555;
+        }
+    """
+    _STYLE_INP_ACTIVE = """
+        QLineEdit {
+            border: 1.5px solid #DADADA;
+            border-radius: 8px;
+            padding: 0 10px;
+            background: #FAFAFA;
+            color: #222;
+        }
+        QLineEdit:focus {
+            border: 1.5px solid #0098C4;
+            background: #F0FBFF;
+        }
+    """
+    _STYLE_BTN_MODIFICAR = """
+        QPushButton {
+            background-color: transparent; color: #0098C4;
+            border: 1.5px solid #0098C4; border-radius: 15px;
+        }
+        QPushButton:hover { background-color: #C9EFFD; }
+    """
+    _STYLE_BTN_GUARDAR = """
+        QPushButton {
+            background-color: #0098C4; color: #FFFFFF;
+            border: none; border-radius: 15px;
+        }
+        QPushButton:hover { background-color: #007BA3; }
+    """
+
+    def _set_config_editable(self, editable: bool):
+        self._inp_hoja.setReadOnly(not editable)
+        self._inp_filas.setReadOnly(not editable)
+        style = self._STYLE_INP_ACTIVE if editable else self._STYLE_INP_LOCKED
+        self._inp_hoja.setStyleSheet(style)
+        self._inp_filas.setStyleSheet(style)
+        if editable:
+            self._btn_modificar.setText("Guardar")
+            self._btn_modificar.setStyleSheet(self._STYLE_BTN_GUARDAR)
+        else:
+            self._btn_modificar.setText("Modificar")
+            self._btn_modificar.setStyleSheet(self._STYLE_BTN_MODIFICAR)
+
+    def _toggle_config(self):
+        self._editando_config = not self._editando_config
+        self._set_config_editable(self._editando_config)
+        if not self._editando_config:
+            # Guardar pulsado: restaurar defaults si los campos quedaron vacíos
+            if not self._inp_hoja.text().strip():
+                self._inp_hoja.setText("Lugares")
+            if not self._inp_filas.text().strip():
+                self._inp_filas.setText("25000")
+
     # ── Lógica ────────────────────────────────────────────────────────
     def _validar(self) -> str | None:
         if not self._dz.tiene_archivo():
@@ -316,6 +391,10 @@ class VistaDividirArchivo(QWidget):
         return None
 
     def _comenzar(self):
+        # Auto-guardar configuración si el usuario la dejó en modo edición
+        if self._editando_config:
+            self._toggle_config()
+
         error = self._validar()
         if error:
             self._lbl_error.setText(f"⚠  {error}")
@@ -332,6 +411,7 @@ class VistaDividirArchivo(QWidget):
         os.makedirs(carpeta_salida, exist_ok=True)
 
         self._btn_back.setEnabled(False)
+        self._btn_modificar.setEnabled(False)
         self._dz.setEnabled(False)
         self._inp_hoja.setEnabled(False)
         self._inp_filas.setEnabled(False)
@@ -360,6 +440,7 @@ class VistaDividirArchivo(QWidget):
 
     def _on_terminado(self, carpeta: str, total_partes: int):
         self._btn_back.setEnabled(True)
+        self._btn_modificar.setEnabled(True)
         self._lbl_ok.setText(
             f"✓  División completada en {total_partes} parte(s)\n"
             f"Archivos guardados en Descargas /\n"
@@ -369,6 +450,7 @@ class VistaDividirArchivo(QWidget):
 
     def _on_error(self, mensaje: str):
         self._btn_back.setEnabled(True)
+        self._btn_modificar.setEnabled(True)
         self._inp_hoja.setEnabled(True)
         self._inp_filas.setEnabled(True)
         self._dz.setEnabled(True)
