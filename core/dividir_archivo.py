@@ -5,6 +5,7 @@ Sin dependencias de Qt — se puede llamar desde CLI o desde la UI.
 
 import os
 import math
+import shutil
 import openpyxl
 
 
@@ -68,15 +69,19 @@ def dividir_archivo(
     for i in range(total_partes):
         chunk = datos[i * max_filas: min((i + 1) * max_filas, total_filas)]
 
-        wb_nuevo = openpyxl.Workbook()
-        ws_nuevo = wb_nuevo.active
-        ws_nuevo.title = nombre_hoja
-        ws_nuevo.append(encabezado)
+        nombre_parte = f"{nombre_base}_Parte{i + 1}{extension}"
+        ruta_parte = os.path.join(carpeta_salida, nombre_parte)
+        # Copiar el archivo original para preservar formato, estilos y propiedades
+        shutil.copy2(ruta_archivo, ruta_parte)
+        wb_nuevo = openpyxl.load_workbook(ruta_parte, keep_links=False)
+        ws_nuevo = wb_nuevo[nombre_hoja]
+        # Eliminar todas las filas de datos (conservar sólo el encabezado en fila 1)
+        filas_en_copia = ws_nuevo.max_row
+        if filas_en_copia > 1:
+            ws_nuevo.delete_rows(2, filas_en_copia - 1)
         for fila in chunk:
             ws_nuevo.append(list(fila))
-
-        nombre_parte = f"{nombre_base}_Parte{i + 1}{extension}"
-        wb_nuevo.save(os.path.join(carpeta_salida, nombre_parte))
+        wb_nuevo.save(ruta_parte)
         wb_nuevo.close()
 
         if progreso_cb:

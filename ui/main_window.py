@@ -36,7 +36,7 @@ CARDS = [
     },
     {
         "titulo": "Dividir archivo Excel\nen partes",
-        "subtitulo": "Electrolit MX",
+        "subtitulo": "Global",
         "vista": VistaDividirArchivo,
     },
     {

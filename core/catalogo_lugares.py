@@ -67,6 +67,9 @@ _MAPEO = {
 _HOJA_CLIENTE = "BD"
 _HOJA_SISTEMA = "Lugares"
 
+# ── Límite de registros por archivo de salida ────────────────────────
+_LIMITE_REGISTROS = 25_000
+
 
 # ══════════════════════════════════════════════════════════════════════
 # Utilidades internas
@@ -530,5 +533,41 @@ def actualizar_catalogo_lugares(
         raise RuntimeError(f"No se pudo guardar el archivo: {exc}")
 
     wb_sistema.close()
+
+    # ── 5. Dividir en partes si supera el límite ──────────────────────
+    total_filas_datos = len(todas_las_filas)
+    if total_filas_datos > _LIMITE_REGISTROS:
+        print(f"  El catálogo tiene {total_filas_datos:,} registros → "
+              f"dividiendo en partes de {_LIMITE_REGISTROS:,}…")
+
+        # Extraer valores de las filas de datos (ya cargadas en memoria como Cell objects)
+        filas_datos = [[cell.value for cell in row] for row in todas_las_filas]
+
+        ext = os.path.splitext(ruta_salida)[1]
+        nombre_base = "layout_places_actualizado"
+        num_partes = (total_filas_datos + _LIMITE_REGISTROS - 1) // _LIMITE_REGISTROS
+
+        for i in range(num_partes):
+            chunk = filas_datos[i * _LIMITE_REGISTROS:(i + 1) * _LIMITE_REGISTROS]
+            ruta_p = os.path.join(carpeta_salida, f"{nombre_base}_parte_{i + 1}{ext}")
+            # Copiar el archivo actualizado para preservar todo el formato y propiedades
+            shutil.copy2(ruta_salida, ruta_p)
+            wb_p = openpyxl.load_workbook(ruta_p, keep_links=False)
+            ws_p = wb_p[_HOJA_SISTEMA]
+            # Eliminar filas de datos anteriores; conservar encabezados
+            filas_en_copia = ws_p.max_row
+            if filas_en_copia > fila_enc_sistema:
+                ws_p.delete_rows(fila_enc_sistema + 1, filas_en_copia - fila_enc_sistema)
+            for fila in chunk:
+                ws_p.append(fila)
+            wb_p.save(ruta_p)
+            wb_p.close()
+            print(f"    Parte {i + 1}/{num_partes}: {len(chunk):,} registros "
+                  f"→ {os.path.basename(ruta_p)}")
+
+        # Eliminar el archivo unificado; queda reemplazado por las partes
+        os.remove(ruta_salida)
+        print(f"  División completada: {num_partes} archivos generados.")
+
     return True
 

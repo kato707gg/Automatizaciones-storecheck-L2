@@ -60,7 +60,7 @@ def _campo(label_text: str, placeholder: str,
     inp = QLineEdit()
     inp.setPlaceholderText(placeholder)
     inp.setFont(QFont("Segoe UI", 11))
-    inp.setFixedHeight(38)
+    inp.setFixedHeight(34)
     inp.setStyleSheet("""
         QLineEdit {
             border: 1.5px solid #DADADA;
@@ -107,39 +107,39 @@ class VistaDividirArchivo(QWidget):
         if back_cb:
             self._btn_back.clicked.connect(back_cb)
         outer.addWidget(self._btn_back, 0, Qt.AlignLeft)
-        outer.addSpacing(30)
+        outer.addSpacing(12)
 
         # ── Título ────────────────────────────────────────────────────
         lbl_title = QLabel("Dividir archivo Excel en partes")
-        lbl_title.setFont(QFont("Segoe UI", 24, QFont.Bold))
+        lbl_title.setFont(QFont("Segoe UI", 22, QFont.Bold))
         lbl_title.setStyleSheet("color: #0098C4;")
         outer.addWidget(lbl_title)
-        outer.addSpacing(10)
+        outer.addSpacing(6)
 
         # ── Descripción ───────────────────────────────────────────────
         lbl_desc = QLabel(
             "Esta automatización te ayudara a separar tu archivo Excel en partes con cierta cantidad de filas. Es conveniente para cargas masivas que tienen un limite de registros y tu archivo a subir supera ese limite.")
-        lbl_desc.setFont(QFont("Segoe UI", 13))
+        lbl_desc.setFont(QFont("Segoe UI", 12))
         lbl_desc.setStyleSheet("color: #333;")
         lbl_desc.setWordWrap(True)
         outer.addWidget(lbl_desc)
-        outer.addSpacing(28)
+        outer.addSpacing(14)
 
         # ── Requerimientos ────────────────────────────────────────────
         lbl_req_titulo = QLabel("Requerimientos")
-        lbl_req_titulo.setFont(QFont("Segoe UI", 13, QFont.Bold))
+        lbl_req_titulo.setFont(QFont("Segoe UI", 12, QFont.Bold))
         lbl_req_titulo.setStyleSheet("color: #0098C4;")
         outer.addWidget(lbl_req_titulo)
-        outer.addSpacing(6)
+        outer.addSpacing(4)
 
         lbl_req_body = QLabel(
             "  · Nombre exacto de la hoja a dividir\n"
             "  · Límite de filas por parte (default: 25,000)"
         )
-        lbl_req_body.setFont(QFont("Segoe UI", 12))
+        lbl_req_body.setFont(QFont("Segoe UI", 11))
         lbl_req_body.setStyleSheet("color: #333;")
         outer.addWidget(lbl_req_body)
-        outer.addSpacing(28)
+        outer.addSpacing(20)
 
         # ── Configuración ─────────────────────────────────────────────
         config_frame = QFrame()
@@ -150,8 +150,8 @@ class VistaDividirArchivo(QWidget):
             }
         """)
         config_lay = QVBoxLayout(config_frame)
-        config_lay.setContentsMargins(20, 16, 20, 16)
-        config_lay.setSpacing(14)
+        config_lay.setContentsMargins(16, 10, 16, 10)
+        config_lay.setSpacing(8)
 
         config_header = QHBoxLayout()
         config_header.setContentsMargins(0, 0, 0, 0)
@@ -162,8 +162,8 @@ class VistaDividirArchivo(QWidget):
         config_header.addWidget(lbl_config)
         config_header.addStretch()
         self._btn_modificar = QPushButton("Modificar")
-        self._btn_modificar.setFixedSize(90, 30)
-        self._btn_modificar.setFont(QFont("Segoe UI", 10))
+        self._btn_modificar.setFixedSize(80, 28)
+        self._btn_modificar.setFont(QFont("Segoe UI", 11))
         self._btn_modificar.setCursor(Qt.PointingHandCursor)
         self._btn_modificar.clicked.connect(self._toggle_config)
         config_header.addWidget(self._btn_modificar)
@@ -174,13 +174,13 @@ class VistaDividirArchivo(QWidget):
 
         lbl_hoja, self._inp_hoja = _campo("Nombre de hoja", "Lugares")
         self._inp_hoja.setText("Lugares")
-        self._inp_hoja.setMaximumWidth(280)
+        self._inp_hoja.setMaximumWidth(240)
 
         lbl_filas, self._inp_filas = _campo(
             "Límite de filas por parte", "25000",
             validator=QIntValidator(1, 10_000_000))
         self._inp_filas.setText("25000")
-        self._inp_filas.setMaximumWidth(180)
+        self._inp_filas.setMaximumWidth(150)
 
         for lbl, inp in ((lbl_hoja, self._inp_hoja),
                           (lbl_filas, self._inp_filas)):
@@ -197,13 +197,13 @@ class VistaDividirArchivo(QWidget):
         # Bloquear configuración hasta que el usuario pulse Modificar
         self._editando_config = False
         self._set_config_editable(False)
-        outer.addSpacing(28)
+        outer.addSpacing(25)
 
         # ── DropZone ──────────────────────────────────────────────────
         self._dz = DropZone(
             "Arrastra aquí tu archivo Excel\no haz clic para buscarlo")
         outer.addWidget(self._dz)
-        outer.addSpacing(24)
+        outer.addSpacing(25)
 
         # ── Estado: 0=idle 1=procesando 2=error 3=éxito ──────────────
         self._estado = QStackedWidget()
@@ -250,7 +250,7 @@ class VistaDividirArchivo(QWidget):
         l1.addWidget(self._pbar, 0, Qt.AlignHCenter)
         self._lbl_progreso = QLabel("Procesando…")
         self._lbl_progreso.setAlignment(Qt.AlignCenter)
-        self._lbl_progreso.setFont(QFont("Segoe UI", 11))
+        self._lbl_progreso.setFont(QFont("Segoe UI", 12))
         self._lbl_progreso.setStyleSheet("color: #555;")
         l1.addWidget(self._lbl_progreso)
         self._estado.addWidget(w1)
@@ -263,13 +263,13 @@ class VistaDividirArchivo(QWidget):
         l2.setSpacing(10)
         self._lbl_error = QLabel()
         self._lbl_error.setAlignment(Qt.AlignCenter)
-        self._lbl_error.setFont(QFont("Segoe UI", 10))
+        self._lbl_error.setFont(QFont("Segoe UI", 11))
         self._lbl_error.setStyleSheet("color: #C62828;")
         self._lbl_error.setWordWrap(True)
         l2.addWidget(self._lbl_error)
         btn_retry = QPushButton("↺  Volver a intentar")
         btn_retry.setFixedSize(200, 42)
-        btn_retry.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        btn_retry.setFont(QFont("Segoe UI", 11, QFont.Bold))
         btn_retry.setCursor(Qt.PointingHandCursor)
         btn_retry.setStyleSheet("""
             QPushButton { background-color: #FFEBEE; color: #C62828;
@@ -288,13 +288,13 @@ class VistaDividirArchivo(QWidget):
         l3.setSpacing(10)
         self._lbl_ok = QLabel()
         self._lbl_ok.setAlignment(Qt.AlignCenter)
-        self._lbl_ok.setFont(QFont("Segoe UI", 11))
+        self._lbl_ok.setFont(QFont("Segoe UI", 12))
         self._lbl_ok.setStyleSheet("color: #2E7D32;")
         self._lbl_ok.setWordWrap(True)
         l3.addWidget(self._lbl_ok)
         btn_nueva = QPushButton("↺  Nuevo intento")
         btn_nueva.setFixedSize(200, 42)
-        btn_nueva.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        btn_nueva.setFont(QFont("Segoe UI", 11, QFont.Bold))
         btn_nueva.setCursor(Qt.PointingHandCursor)
         btn_nueva.setStyleSheet("""
             QPushButton { background-color: #E8F5E9; color: #2E7D32;
@@ -334,14 +334,14 @@ class VistaDividirArchivo(QWidget):
     _STYLE_BTN_MODIFICAR = """
         QPushButton {
             background-color: transparent; color: #0098C4;
-            border: 1.5px solid #0098C4; border-radius: 15px;
+            border: 1.5px solid #0098C4; border-radius: 14px;
         }
         QPushButton:hover { background-color: #C9EFFD; }
     """
     _STYLE_BTN_GUARDAR = """
         QPushButton {
             background-color: #0098C4; color: #FFFFFF;
-            border: none; border-radius: 15px;
+            border: none; border-radius: 14px;
         }
         QPushButton:hover { background-color: #007BA3; }
     """

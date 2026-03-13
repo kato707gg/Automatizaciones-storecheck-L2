@@ -170,7 +170,7 @@ class DropZone(QFrame):
         super().dragLeaveEvent(event)
 
     def enterEvent(self, event):
-        if self.tiene_archivo():
+        if self.tiene_archivo() and self.isEnabled():
             self._overlay.setGeometry(0, 0, self.width(), self.height())
             self._overlay.show()
             self._overlay.raise_()
