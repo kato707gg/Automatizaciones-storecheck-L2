@@ -1,0 +1,1238 @@
+{
+  "metadata": {
+    "project": "Automatizaciones storecheck L2",
+    "source": "Exploracion MCP + DevTools — extraccion de window.module.moduleCapture y SELECT captureDataType",
+    "version": "0.4.0",
+    "updated_at": "2026-03-17",
+    "platform_version": "1.50.19",
+    "base_url": "https://webapp.storecheck.com",
+    "task_creation_url": "https://webapp.storecheck.com/moduleCapture/create",
+    "notes": "Datos REALES extraidos de la plataforma via MCP. Total: 39 tipos de bloque confirmados."
+  },
+  "task_schema": {
+    "js_global_object": "window.module.moduleCapture",
+    "required_root_fields": [
+      "moduleDsc"
+    ],
+    "known_root_fields": {
+      "id": "number — ID interno del modulo (asignado por plataforma)",
+      "moduleDsc": "string — nombre visible de la tarea",
+      "draftMode": "boolean — true mientras no se publica",
+      "multipleAnswer": "boolean",
+      "attachmentId": "null | string",
+      "moduleScopeTypeId": "number (1 = tienda)",
+      "isActionPlan": "boolean",
+      "answerWoStart": "boolean",
+      "elements": "object — contiene array 'elements' con los bloques"
+    },
+    "element_hidden_inputs": [
+      "elementId",
+      "orderElement",
+      "attachmentId",
+      "precaptureType",
+      "precaptureTypeDsc",
+      "countProductLvl",
+      "showHubInfoType",
+      "showHubInfoTypeDsc",
+      "parentCaptureDataType",
+      "typeConditionSelected"
+    ],
+    "max_depth": null,
+    "max_blocks": null
+  },
+  "block_types": [
+    {
+      "_comment": "=== ACCIONES SIMPLES (19 tipos) ==="
+    },
+    {
+      "captureDataType": "36",
+      "label": "Código de barras",
+      "group": "Acciones simples",
+      "description": "Captura mediante escaneo de código de barras",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "35",
+      "label": "Código QR",
+      "group": "Acciones simples",
+      "description": "Captura mediante escaneo de código QR",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "2",
+      "label": "Decimal",
+      "group": "Acciones simples",
+      "description": "Captura un número decimal",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {
+        "limitType": "string — '1'=Sin límites (descubierto en UI)",
+        "lowerLimit": "string — límite inferior (vacío = sin límite)",
+        "upperLimit": "string — límite superior (vacío = sin límite)"
+      },
+      "supports_children": false,
+      "status": "partially_explored"
+    },
+    {
+      "captureDataType": "1",
+      "label": "Entero",
+      "group": "Acciones simples",
+      "description": "Captura un número entero. Tipo por defecto al crear un bloque nuevo.",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {
+        "limitType": "string — '1'=Sin límites (DEFINIR LÍMITES dropdown descubierto)",
+        "lowerLimit": "string — límite inferior",
+        "upperLimit": "string — límite superior"
+      },
+      "supports_children": false,
+      "status": "partially_explored",
+      "notes": "captureDataType='1' es el valor por defecto del SELECT al agregar un nuevo bloque"
+    },
+    {
+      "captureDataType": "8",
+      "label": "Fecha",
+      "group": "Acciones simples",
+      "description": "Captura una fecha",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "10",
+      "label": "Fecha y Hora",
+      "group": "Acciones simples",
+      "description": "Captura fecha y hora combinadas",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "37",
+      "label": "Firma",
+      "group": "Acciones simples",
+      "description": "Captura la firma del usuario",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "12",
+      "label": "Foto",
+      "group": "Acciones simples",
+      "description": "Captura una o varias fotos",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {
+        "allowedPhotos": "boolean — si se permiten fotos",
+        "mandatoryPhotos": "boolean — si las fotos son obligatorias",
+        "multiplePhotos": "boolean — si se permiten múltiples fotos"
+      },
+      "supports_children": false,
+      "status": "partially_explored",
+      "notes": "block 'Foto de exhibición' usa captureDataType=36 (Código de barras icon) — CONFIRMAR. Block ejemplo: elementId=2075611, mandatory=false, availableNA=true"
+    },
+    {
+      "captureDataType": "7",
+      "label": "Hecho",
+      "group": "Acciones simples",
+      "description": "Registro de tarea completada / aprobación de thumbs up",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "9",
+      "label": "Hora",
+      "group": "Acciones simples",
+      "description": "Captura solo la hora",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "5",
+      "label": "Lista de ranking",
+      "group": "Acciones simples",
+      "description": "Lista ordenable por ranking (1°, 2°, 3°...)",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "4",
+      "label": "Lista de selección múltiple",
+      "group": "Acciones simples",
+      "description": "Permite seleccionar varias opciones de una lista",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {
+        "answerCatalog": "string — ID del catálogo de respuestas (mismo mecanismo que Lista única)",
+        "otherAnswer": "boolean — si se incluye opción 'Otro'"
+      },
+      "creation_flow": "Idéntico a Lista única (tipo 3) — misma API saveCatalog + saveOption",
+      "ui_classes": { "section_form": ".multipleListSectionForm" },
+      "can_be_parent_for_conditions": true,
+      "supports_children": false,
+      "status": "explored",
+      "exploration_notes": "Usa mismo flujo que Lista única. Diferencia: UI permite selección múltiple simultánea. HTML form class es .multipleListSectionForm en lugar de .uniqueListSectionForm."
+    },
+    {
+      "captureDataType": "3",
+      "label": "Lista de selección única",
+      "group": "Acciones simples",
+      "description": "Permite seleccionar solo una opción de una lista",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {
+        "answerCatalog": "string — ID del catálogo de respuestas (ej: '358489'). Solo el ID, no las opciones.",
+        "otherAnswer": "boolean — si se incluye opción 'Otro' al final de la lista"
+      },
+      "element_json_example": {
+        "captureDataType": "3",
+        "id": "element2075655",
+        "name": "Categoría de producto",
+        "answerCatalog": "358489",
+        "otherAnswer": false,
+        "orderElement": "4",
+        "elementId": "2075655"
+      },
+      "creation_flow": {
+        "step1_create_catalog": {
+          "endpoint": "POST /moduleCapture/getAnswerCatalog",
+          "body": { "type": "saveCatalog", "elementId": "<elementId>" },
+          "response": { "id": "<catalogId>", "text": "<catalogText>" },
+          "trigger": "click en botón .new-catalog",
+          "note": "Crea un catálogo vacío. El ID se guarda en select[name='answerCatalog'] y en el elemento."
+        },
+        "step2_add_options": {
+          "endpoint": "POST /moduleCapture/getAnswerCatalog",
+          "body": {
+            "type": "saveOption",
+            "answerCatalogId": "<catalogId>",
+            "optionDsc": "<texto de opción>",
+            "elementId": "<elementId>",
+            "elementOrder": "<número de orden — calculado como siblings('.option-list').length + 1>",
+            "captureElementId": "<elementId — mismo que elementId>"
+          },
+          "response": { "id": "<optionId>" },
+          "trigger": "click en ícono .add-option-list tras escribir en input[name='optionDsc']",
+          "min_options": 2,
+          "max_options": 100
+        },
+        "step3_save_element": {
+          "note": "Guardar el elemento principal vía POST /moduleCapture/update con el JSON — answerCatalog solo tiene el ID del catálogo, las opciones se mantienen en BD separadas."
+        }
+      },
+      "ui_classes": {
+        "section_form": ".uniqueListSectionForm",
+        "options_list": ".option-ul-list",
+        "new_catalog_btn": ".new-catalog",
+        "add_option_btn": ".add-option-elem",
+        "confirm_option_btn": ".add-option-list",
+        "cancel_option_btn": ".remove-option-list",
+        "other_checkbox": ".check-other-answer"
+      },
+      "can_be_parent_for_conditions": true,
+      "supports_children": false,
+      "status": "explored",
+      "exploration_notes": "Catálogo creado via saveCatalog primero. Opciones guardadas una a una antes del save del bloque. elementOrder = posición 1-based en la lista. Lista múltiple (tipo 4) usa mismo flujo con .multipleListSectionForm."
+    },
+    {
+      "captureDataType": "40",
+      "label": "PDF Online",
+      "group": "Acciones simples",
+      "description": "Muestra un PDF en línea",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "38",
+      "label": "Reporte SQL",
+      "group": "Acciones simples",
+      "description": "Muestra un reporte basado en SQL",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "39",
+      "label": "Reporte URL",
+      "group": "Acciones simples",
+      "description": "Muestra un reporte desde una URL",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "13",
+      "label": "Satisfacción",
+      "group": "Acciones simples",
+      "description": "Escala de satisfacción (similar a rating de estrella/carita)",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "6",
+      "label": "Si / No",
+      "group": "Acciones simples",
+      "description": "Pregunta binaria. Soporta bloques hijos condicionales por rama.",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {
+        "parentCaptureDataType": "hidden input — referenciado en bloques hijo para indicar su bloque padre",
+        "typeConditionSelected": "hidden input — valor de la condición ('si' o 'no') que activa el bloque hijo"
+      },
+      "supports_children": true,
+      "branching_mechanism": "PENDIENTE — Los bloques hijo referencian al padre via parentCaptureDataType y typeConditionSelected. El UI de configuración de ramas NO aparece en el panel del bloque mismo.",
+      "status": "partially_explored",
+      "exploration_notes": "Panel de config tiene las mismas propiedades que Texto (Nombre, Fotos, Adjuntos, Captura previa, Asociar productos, Info adicional, NA, Obligatorio). Sin UI de ramas visible al crear. Requiere exploración adicional."
+    },
+    {
+      "captureDataType": "11",
+      "label": "Texto",
+      "group": "Acciones simples",
+      "description": "Campo de texto libre",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "explored",
+      "confirmed_properties": [
+        "Nombre (requerido — validación 'Campo es obligatorio')",
+        "Fotos: Permitida / Obligatoria / Múltiples (checkboxes)",
+        "Adjuntos (toggle)",
+        "Captura previa (toggle)",
+        "Asociar productos (toggle)",
+        "Info adicional (toggle)",
+        "NA (checkbox)",
+        "Obligatorio (checkbox)"
+      ]
+    },
+    {
+      "_comment": "=== ACCIONES VINCULADAS A UN KPI (18 tipos) ==="
+    },
+    {
+      "captureDataType": "31",
+      "label": "Abordos",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de abordos (conteo de personas abordadas)",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "18",
+      "label": "Agotamiento",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de agotamiento de producto en anaquel",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "28",
+      "label": "Caducidad (entero)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "Captura de piezas caducadas como número entero",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "27",
+      "label": "Caducidad (fecha)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "Captura de fecha de caducidad",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "16",
+      "label": "Catalogación",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de catalogación de productos",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "15",
+      "label": "Comunicación de precio",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "Verifica comunicación de precio en punto de venta",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "17",
+      "label": "Disponibilidad",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de disponibilidad de producto. Tipo especial con precaptura y configuración de nivel de producto.",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {
+        "hasPrecapture": "boolean",
+        "precaptureType": "string — '3'=Llenado previo (confirmado)",
+        "precaptureTypeDsc": "string — descripción legible del tipo (ej: 'Llenado previo')",
+        "countProductLvl": "string — nivel de conteo de producto (ej: '3')",
+        "productOption": "number — opción de producto (ej: 1)",
+        "limitType": "string — '1'=Sin límites",
+        "lowerLimit": "string",
+        "upperLimit": "string",
+        "showHubInfo": "boolean"
+      },
+      "supports_children": false,
+      "status": "partially_explored",
+      "exploration_notes": "Block ejemplo real: elementId=2075612, mandatory=true, availableNA=true, hasPrecapture=true, precaptureType='3', countProductLvl='3', productOption=1"
+    },
+    {
+      "captureDataType": "22",
+      "label": "Fondos (decimal)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de fondos en decimal",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "21",
+      "label": "Fondos (entero)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de fondos en entero",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "20",
+      "label": "Frentes (decimal)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de frentes en decimal",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "19",
+      "label": "Frentes (entero)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de frentes en entero",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "24",
+      "label": "Inventario (decimal)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de inventario en decimal",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "23",
+      "label": "Inventario (entero)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de inventario en entero",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "26",
+      "label": "Pedido (decimal)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "Captura de pedido en decimal",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "25",
+      "label": "Pedido (entero)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "Captura de pedido en entero",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "14",
+      "label": "Precios",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de precios en punto de venta",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "30",
+      "label": "Ventas (decimal)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de ventas en decimal",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "captureDataType": "29",
+      "label": "Ventas (entero)",
+      "group": "Acciones vinculadas a un KPI",
+      "description": "KPI de ventas en entero",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    },
+    {
+      "_comment": "=== OTRO (2 tipos) ==="
+    },
+    {
+      "captureDataType": "33",
+      "label": "Acciones múltiples",
+      "group": "Otro",
+      "description": "Contenedor de múltiples acciones/métricas en un solo bloque",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {
+        "productOption": "string — nivel seleccionado para productos (ej: '1' = Producto)",
+        "countProductLvl": "string|number — total de productos seleccionados en el nivel (ej: '0' al inicio)",
+        "multimetric": [
+          {
+            "captureDataType": "string — tipo de subacción agregada dentro de la multimétrica (ej: '17')",
+            "name": "string — nombre de la subacción (puede iniciar vacío)",
+            "availableNA": "boolean",
+            "mandatory": "boolean",
+            "active": "boolean",
+            "orderElement": "string|number — orden interno dentro de multimetric[]",
+            "elementId": "string — ID persistido de la subacción"
+          }
+        ],
+        "creation_flow": {
+          "step1_load_levels": {
+            "endpoint": "GET /moduleCapture/servicesProduct?type=getProductOptions&captureDataTypeId=33",
+            "response_example": {
+              "results": [
+                {"id": 1, "text": "Producto"},
+                {"id": 2, "text": "Marca - Categoría"}
+              ]
+            }
+          },
+          "step2_select_level_side_effect": {
+            "endpoints": [
+              "POST /moduleCapture/servicesProduct (type=countProductElement)",
+              "GET /moduleCapture/servicesProduct?type=index&captureElementId=<id>&productOptionId=<nivel>",
+              "POST /moduleCapture/getElementsByProductOptionId"
+            ],
+            "effect": "habilita secciones 'Ver productos' y 'Definición'"
+          },
+          "step3_load_metric_types": {
+            "endpoint": "GET /moduleCapture/servicesProduct?type=getCaptureDataType&productOptionId=<nivel>",
+            "response": "lista agrupada de tipos permitidos para subacción"
+          },
+          "step4_add_metric": {
+            "endpoint": "POST /moduleCapture/update",
+            "body_flags": {
+              "type": "newElement",
+              "ownerElementId": "<elementId de la multimétrica>",
+              "element": "subacción seleccionada en 'Definición'",
+              "elementsArray": "incluye bloque 33 con multimetric[]"
+            },
+            "response_example": {"elementId": 2075660}
+          }
+        },
+        "confirmed_json_example": {
+          "captureDataType": "33",
+          "name": "Acciones múltiples",
+          "productOption": "1",
+          "countProductLvl": "0",
+          "multimetric": [
+            {
+              "captureDataType": "17",
+              "availableNA": true,
+              "mandatory": true,
+              "active": true,
+              "name": "",
+              "orderElement": "1",
+              "elementId": "2075660"
+            }
+          ]
+        }
+      },
+      "supports_children": "special_multimetric_only",
+      "status": "explored"
+    },
+    {
+      "captureDataType": "34",
+      "label": "Reconocimiento de imagen",
+      "group": "Otro",
+      "description": "Análisis de imagen por visión artificial",
+      "common_properties": "ver common_element_properties",
+      "specific_properties": {},
+      "supports_children": false,
+      "status": "pending_exploration"
+    }
+  ],
+  "common_element_properties": {
+    "description": "Propiedades comunes a todos los bloques (confirmadas via window.module.moduleCapture)",
+    "fields": {
+      "elementId": "string — ID único del elemento (asignado por plataforma)",
+      "name": "string — REQUERIDO. Nombre visible del bloque. Falla con 'Campo es obligatorio' si está vacío.",
+      "captureDataType": "string — ID del tipo de bloque (ver block_types)",
+      "orderElement": "string|number — posición en la lista (1-indexed)",
+      "active": "boolean — si el bloque está activo",
+      "mandatory": "boolean — si el bloque es obligatorio",
+      "availableNA": "boolean — si el agente puede marcar N/A",
+      "allowedPhotos": "boolean — si se permiten adjuntar fotos",
+      "mandatoryPhotos": "boolean — si las fotos son obligatorias",
+      "multiplePhotos": "boolean — si se permiten múltiples fotos",
+      "attachmentId": "string — ID de adjunto (vacío = sin adjunto)",
+      "hasPrecapture": "boolean — habilita Captura previa",
+      "precaptureType": "string — tipo de captura previa ('1'|'2'|'3')",
+      "precaptureTypeDsc": "string — texto del tipo seleccionado ('Informativa'|' Con validación'|'Llenado previo')",
+      "hasHubPrecapture": "boolean — modo 'Basada en datos' para captura previa",
+      "jsonHubPrecapture": "string — JSON/SQL custom para datos de captura previa (vacío cuando hasHubPrecapture=false)",
+      "hasAssociatedProduct": "boolean — si el bloque está asociado a un producto",
+      "id": "string — selector CSS del bloque (ej: 'element2075611')"
+    },
+    "ui_panel_sections_confirmed": [
+      "Nombre (campo de texto — requerido)",
+      "Fotos: Permitida / Obligatoria / Múltiples (checkboxes)",
+      "Adjuntos (toggle)",
+      "Captura previa (toggle)",
+      "Asociar productos (toggle)",
+      "Info adicional (toggle)",
+      "NA (checkbox)",
+      "Obligatorio (checkbox)"
+    ]
+  },
+  "precapture_schema": {
+    "status": "explored",
+    "activation_toggle_field": "hasPrecapture",
+    "activation_flow": [
+      "Al activar hasPrecapture, la UI fuerza precaptureType=1 (Informativa) por defecto",
+      "Se muestran opciones de radio y se marcan required-field sobre precaptureType y precaptureTypeDsc",
+      "Al desactivar hasPrecapture, precaptureType y precaptureTypeDsc se limpian ('') y se oculta la sección"
+    ],
+    "options": [
+      {
+        "radio_value": "1",
+        "label": "Informativa",
+        "precaptureType": "1",
+        "precaptureTypeDsc": "Informativa",
+        "behavior": "Solo visualiza datos de captura previa"
+      },
+      {
+        "radio_value": "2",
+        "label": "Con validación",
+        "precaptureType": "2",
+        "precaptureTypeDsc": " Con validación",
+        "behavior": "Precarga datos y requiere confirmación"
+      },
+      {
+        "radio_value": "3",
+        "label": "Llenado previo",
+        "precaptureType": "3",
+        "precaptureTypeDsc": "Llenado previo",
+        "behavior": "Precarga datos y no requiere confirmación"
+      }
+    ],
+    "hub_precapture": {
+      "toggle_field": "hasHubPrecapture",
+      "off_state": {
+        "label": "Basada en visita previa",
+        "jsonHubPrecapture": ""
+      },
+      "on_state": {
+        "label": "Basada en datos",
+        "shows_field": "textarea[name='jsonHubPrecapture']"
+      },
+      "default_template_source": "input#defaultHubPrecaptureJson",
+      "expected_json_format": {
+        "custom_precapture": {
+          "type_result": "number",
+          "query": "SELECT dp.id, columnn1 FROM project${0}.hub_product_store_data ... WHERE hpsd.place_id = ${1} AND dp.id in (${2});"
+        }
+      },
+      "query_variables": {
+        "${0}": "project id",
+        "${1}": "place id",
+        "${2}": "lista de IDs de dimensión de productos"
+      },
+      "query_constraints": [
+        "La primera columna del query debe ser el ID de la dimensión de productos",
+        "La tabla usada en FROM debe existir en el schema project de la BD",
+        "Si la acción no está asociada al árbol de productos, la primera columna debe devolver -1"
+      ],
+      "validation_observed": {
+        "client_side": "No se detectó parseo JSON en cliente para jsonHubPrecapture; el handler solo muestra/oculta sección y limpia valor al desactivar hasHubPrecapture",
+        "required_behavior": "Con hasHubPrecapture=true, el textarea se maneja como campo requerido (required-field)",
+        "backend_behavior": {
+          "endpoint_tested": "POST /moduleCapture/update (type=element)",
+          "invalid_json_result": "HTTP 500 (HTML error page 'An error has occurred') al enviar jsonHubPrecapture='{invalid json' con hasHubPrecapture=true",
+          "valid_json_result": "HTTP 200 con respuesta [] al enviar JSON válido en jsonHubPrecapture con hasHubPrecapture=true"
+        },
+        "backend_matrix_short": [
+          {
+            "case": "A_empty",
+            "jsonHubPrecapture": "",
+            "result": "HTTP 200"
+          },
+          {
+            "case": "B_malformed",
+            "jsonHubPrecapture": "{invalid json",
+            "result": "HTTP 500"
+          },
+          {
+            "case": "C_empty_object",
+            "jsonHubPrecapture": "{}",
+            "result": "HTTP 200"
+          },
+          {
+            "case": "D_missing_query",
+            "jsonHubPrecapture": "{\"custom_precapture\":{\"type_result\":\"number\"}}",
+            "result": "HTTP 200"
+          },
+          {
+            "case": "E_missing_type_result",
+            "jsonHubPrecapture": "{\"custom_precapture\":{\"query\":\"SELECT -1 as id, 1 as value\"}}",
+            "result": "HTTP 200"
+          },
+          {
+            "case": "F_valid_min",
+            "jsonHubPrecapture": "{\"custom_precapture\":{\"type_result\":\"number\",\"query\":\"SELECT -1 as id, 1 as value\"}}",
+            "result": "HTTP 200"
+          }
+        ],
+        "matrix_conclusion": "La validación backend observada es estricta en sintaxis JSON (malformado falla) pero laxa en estructura/semántica del objeto custom_precapture",
+        "handlers_confirmed": [
+          "change input[name='hasPrecapture']",
+          "change input[name='hasHubPrecapture']",
+          "click .lblPrecaptureOption1/.lblPrecaptureOption2/.lblPrecaptureOption3"
+        ]
+      }
+    },
+    "confirmed_element_example": {
+      "captureDataType": "17",
+      "name": "Disponibilidad",
+      "hasPrecapture": true,
+      "precaptureType": "3",
+      "precaptureTypeDsc": "Llenado previo",
+      "hasHubPrecapture": false,
+      "jsonHubPrecapture": ""
+    }
+  },
+  "nesting_schema": {
+    "description": "Esquema de anidación de bloques — confirmado via editor.getString() con bloque hijo anidado",
+    "library": "jQuery SortableLists ($.fn.sortableLists) + $.fn.nestable",
+    "editor_global": "editor (instancia de MenuEditor)",
+    "serialization_method": "editor.getString() llama r.sortableListsToJson(h) internamente",
+    "serialization_multimetric": "editor.getStringMultimetric(ulJQuery) serializa subacciones de tipo 33; si no recibe UL retorna null",
+    "flat_structure": [
+      "{ captureDataType, id, availableNA, mandatory, active, name, ...type_specific_fields, orderElement, elementId }"
+    ],
+    "nested_structure": [
+      "{ ...bloque_padre_fields, 'children': [ {...bloque_hijo_con_condition_fields} ] }"
+    ],
+    "child_block_extra_fields": {
+      "activeConditionAnswer": "boolean — condicion 'Con respuesta' activa",
+      "activeConditionStage": "boolean — condicion 'Por escenario' activa",
+      "activeConditionNA": "boolean — condicion N/A activa",
+      "answerCondition": "string — '1'=Si, '0'=No (solo para 'Por escenario' con padre Si/No)",
+      "parentCaptureDataType": "string — captureDataType del bloque padre (ej: '6' para Si/No)",
+      "typeConditionSelected": "string — tipo de condicion activo: 'answer' | 'stage' | 'na'"
+    },
+    "dom_structure": "ul.sortableLists > li#elementN > ol.sortableLists > li#elementM (hijos anidados)",
+    "parent_class_change": "li padre cambia de sortableListsClosed → sortableListsOpen",
+    "opener_reveal": "span.sortableListsOpener pierde clase 'invisible' cuando el padre tiene hijos",
+    "condition_badge_reveal": "div.btnConditions pierde clase 'd-none' cuando un bloque es hijo de otro",
+    "condition_section_forms_by_parent_type": {
+      "1 (Entero)": ".integerConditionForm",
+      "2 (Decimal)": ".decimalConditionForm",
+      "3 (Lista única)": ".uniqueSelectionConditionForm",
+      "4 (Lista múltiple)": ".multipleSelectionConditionForm",
+      "5 (Ranking)": ".rankingSelectionConditionForm",
+      "6 (Si/No)": ".yesNoSelectionConditionForm",
+      "7 (Hecho)": ".doneConditionForm",
+      "8 (Fecha)": ".dateConditionForm",
+      "9 (Hora)": ".timeConditionForm",
+      "10 (Fecha y Hora)": ".dateTimeConditionForm",
+      "11 (Texto)": ".textConditionForm",
+      "12 (Foto)": ".photoConditionForm",
+      "13 (Satisfacción)": ".satisfactionConditionForm",
+      "14 (Precios)": ".pricesConditionForm",
+      "15 (Com. precio)": ".priceCommunicationConditionForm",
+      "16 (Catalogación)": ".catalogingConditionForm",
+      "17 (Disponibilidad)": ".availabilityConditionForm",
+      "18 (Agotamiento)": ".outOfStockConditionForm",
+      "19 (Frentes entero)": ".frontsIntegerConditionForm",
+      "20 (Frentes decimal)": ".frontsDecimalConditionForm",
+      "21 (Fondos entero)": ".backIntegerConditionForm",
+      "22 (Fondos decimal)": ".backDecimalConditionForm",
+      "23 (Inv. entero)": ".inventoryIntegerConditionForm",
+      "24 (Inv. decimal)": ".inventoryDecimalConditionForm",
+      "25 (Pedido entero)": ".orderIntegerConditionForm",
+      "26 (Pedido decimal)": ".orderDecimalConditionForm",
+      "27 (Caducidad fecha)": ".expirationDateConditionForm",
+      "28 (Caducidad entero)": ".expirationIntegerConditionForm",
+      "29 (Ventas entero)": ".salesIntegerConditionForm",
+      "30 (Ventas decimal)": ".salesDecimalConditionForm",
+      "31 (Abordos)": ".onBoardConditionForm",
+      "35 (QR)": ".qrCodeConditionForm",
+      "36 (Barcode)": ".barCodeConditionForm",
+      "34 (Vision)": ".visionConditionForm",
+      "37 (Firma)": ".signatureConditionForm"
+    }
+  },
+  "conditions": {
+    "status": "explored",
+    "mechanism": "Condiciones se configuran en el BLOQUE HIJO — no en el padre. Al anidar un bloque bajo otro, su .conditionSection recibe la forma de condición correspondiente al tipo del padre. Los condition inputs son parte del formulario serializado por editor.getString().",
+    "activation_flow": {
+      "step1": "Añadir .conditionSection con el form template correcto según parentCaptureDataType",
+      "step2": "Hacer click en el badge .activeConditionStage / .activeConditionAnswer / .activeConditionNA — esto actualiza inputs: activeConditionStage=checked, typeConditionSelected='stage', etc.",
+      "step3": "Configurar campos extras: answerCondition (Si/No), operatorCondition+valueCondition (Entero/Decimal), etc.",
+      "step4_critical": "Llamar editor.setForm($(li).find('form.frmGeneric').first()) y luego $(li).data(editor.updateDataElement($(li))) para sincronizar li.data() con el DOM antes de editor.getString()",
+      "note_isNewElement": "El handler de $(document).on('change', '.item-capture', ...) tiene un flag isNewElement que evita updateDataElement en elementos recién agregados. Siempre llamar updateDataElement manualmente al configurar condiciones via JS."
+    },
+    "condition_types": {
+      "answer": {
+        "label": "Con respuesta",
+        "description": "El hijo se habilita cuando el padre tiene cualquier respuesta",
+        "typeConditionSelected_value": "answer",
+        "activeConditionAnswer": true,
+        "activeConditionStage": false,
+        "activeConditionNA": false,
+        "badge_to_click": ".activeConditionAnswer",
+        "extra_fields": "ninguno — basta con typeConditionSelected='answer'"
+      },
+      "stage": {
+        "label": "Por escenario",
+        "description": "El hijo se habilita cuando la respuesta del padre es un valor específico",
+        "typeConditionSelected_value": "stage",
+        "activeConditionAnswer": false,
+        "activeConditionStage": true,
+        "activeConditionNA": false,
+        "badge_to_click": ".activeConditionStage",
+        "extra_for_yes_no": {
+          "field": "answerCondition",
+          "select_options": [{"value": "1", "label": "Si"}, {"value": "0", "label": "No"}]
+        },
+        "extra_for_numeric_types": {
+          "field_operator": "operatorCondition",
+          "operatorCondition_select_options": [{"value": "1", "label": "Igual"}, {"value": "7", "label": "Diferente"}, {"value": "2", "label": "Mayor igual"}, {"value": "3", "label": "Menor igual"}, {"value": "4", "label": "Entre"}],
+          "fields_by_operator": {
+            "operators_1_7_2_3": ["valueCondition"],
+            "operator_4_entre": ["lowerLimitCondition", "upperLimitCondition"]
+          }
+        }
+      },
+      "na": {
+        "label": "N/A",
+        "description": "El hijo se habilita cuando el padre tiene respuesta N/A",
+        "typeConditionSelected_value": "na",
+        "activeConditionAnswer": false,
+        "activeConditionStage": false,
+        "activeConditionNA": true,
+        "badge_to_click": ".activeConditionNA",
+        "extra_fields": "ninguno"
+      }
+    },
+    "confirmed_json_examples": {
+      "answer_condition_si_no_parent": {
+        "activeConditionAnswer": true, "activeConditionStage": false, "activeConditionNA": false,
+        "typeConditionSelected": "answer", "parentCaptureDataType": "6", "answerCondition": "1",
+        "note": "answerCondition='1' (Si) es el valor por defecto para 'Con respuesta' en Si/No"
+      },
+      "stage_condition_sino_no": {
+        "activeConditionAnswer": false, "activeConditionStage": true, "activeConditionNA": false,
+        "typeConditionSelected": "stage", "parentCaptureDataType": "6", "answerCondition": "0",
+        "note": "answerCondition='0' para rama No del padre Si/No"
+      },
+      "stage_condition_entero_mayor_igual": {
+        "activeConditionAnswer": false, "activeConditionStage": true, "activeConditionNA": false,
+        "typeConditionSelected": "stage", "parentCaptureDataType": "1", "operatorCondition": "2",
+        "valueCondition": "100", "lowerLimitCondition": "", "upperLimitCondition": "",
+        "note": "operatorCondition='2' = Mayor igual"
+      },
+      "stage_condition_entero_entre": {
+        "activeConditionAnswer": false, "activeConditionStage": true, "activeConditionNA": false,
+        "typeConditionSelected": "stage", "parentCaptureDataType": "1", "operatorCondition": "4",
+        "valueCondition": "", "lowerLimitCondition": "50", "upperLimitCondition": "200",
+        "note": "operatorCondition='4' = Entre; valueCondition vacío, usar lower/upper"
+      },
+      "na_condition": {
+        "activeConditionAnswer": false, "activeConditionStage": false, "activeConditionNA": true,
+        "typeConditionSelected": "na", "parentCaptureDataType": "1",
+        "note": "No requiere campos extra de valor"
+      }
+    },
+    "nesting_restrictions": {
+      "conditionPhoto": "En tarea de tipo exhibición/promoción/POP, foto no puede condicionar otro elemento",
+      "conditionMultimetric": "Los elementos no pueden ser condicionados por multimétrica",
+      "conditionVision": "Los elementos de visión solo pueden ser condicionados por tipos KPI simples o específicos",
+      "taskReportCondition": "En tareas de reporte, nada puede ser condicionado",
+      "numMaxConditionScroll": 8
+    }
+  },
+  "composition_rules": [
+    {
+      "id": "max_depth_rule",
+      "description": "Profundidad máxima de anidación",
+      "value": null,
+      "status": "pending_discovery"
+    },
+    {
+      "id": "max_blocks_rule",
+      "description": "Número máximo de bloques por tarea",
+      "value": null,
+      "status": "pending_discovery"
+    },
+    {
+      "id": "name_required",
+      "description": "El campo Nombre de la acción es obligatorio. Plataforma muestra 'Campo es obligatorio' si está vacío.",
+      "value": true,
+      "status": "confirmed"
+    }
+  ],
+  "ui_mapping": {
+    "block_type_selector": "select.captureDataType (Select2 widget)",
+    "block_gear_icon_class": "nc-icon nc-preferences-circle-2 cursor element-stop-propagation",
+    "block_row_selector": "li.list-group-item.element-capture",
+    "block_element_id_prefix": "element",
+    "add_block_button": "botón '+' visible al final de la lista de bloques",
+    "save_button_selector": "PENDIENTE",
+    "publish_button_selector": "PENDIENTE",
+    "drag_handle_selector": "jQuery-nestable (drag-drop library)",
+    "libraries_detected": [
+      "jQuery",
+      "jQuery-nestable",
+      "Bootstrap",
+      "Select2",
+      "moment.js",
+      "dhtmlx"
+    ],
+    "known_captureDataType_ids": {
+      "Código de barras": "36",
+      "Código QR": "35",
+      "Decimal": "2",
+      "Entero": "1",
+      "Fecha": "8",
+      "Fecha y Hora": "10",
+      "Firma": "37",
+      "Foto": "12",
+      "Hecho": "7",
+      "Hora": "9",
+      "Lista de ranking": "5",
+      "Lista de selección múltiple": "4",
+      "Lista de selección única": "3",
+      "PDF Online": "40",
+      "Reporte SQL": "38",
+      "Reporte URL": "39",
+      "Satisfacción": "13",
+      "Si / No": "6",
+      "Texto": "11",
+      "Abordos": "31",
+      "Agotamiento": "18",
+      "Caducidad (entero)": "28",
+      "Caducidad (fecha)": "27",
+      "Catalogación": "16",
+      "Comunicación de precio": "15",
+      "Disponibilidad": "17",
+      "Fondos (decimal)": "22",
+      "Fondos (entero)": "21",
+      "Frentes (decimal)": "20",
+      "Frentes (entero)": "19",
+      "Inventario (decimal)": "24",
+      "Inventario (entero)": "23",
+      "Pedido (decimal)": "26",
+      "Pedido (entero)": "25",
+      "Precios": "14",
+      "Ventas (decimal)": "30",
+      "Ventas (entero)": "29",
+      "Acciones múltiples": "33",
+      "Reconocimiento de imagen": "34"
+    }
+  },
+  "api_mapping": {
+    "base_url": "https://webapp.storecheck.com",
+    "endpoints_confirmed": {
+      "update_elements": {
+        "method": "POST",
+        "path": "/moduleCapture/update",
+        "header": { "saveAction": true },
+        "payload": {
+          "type": "\"element\"",
+          "elementsArray": "JSON string — resultado de editor.getString() — array de bloques con estructura plana o anidada (children)",
+          "moduleId": "number — ID del módulo (ej: 447349)",
+          "ownerElementId": "null | elementId — solo cuando el bloque pertenece a una subeditor de multimétrica"
+        },
+        "trigger": "Autosave: se dispara ~2s después de detectar cambio (compareJson descarta iguales). Timeout reseteado en cada cambio.",
+        "status": "confirmed_via_js_source"
+      },
+      "save_option_catalog": {
+        "method": "POST",
+        "path": "/moduleCapture/getAnswerCatalog",
+        "payload": {
+          "type": "\"saveOption\"",
+          "answerCatalogId": "ID del catálogo existente (o null si catálogo nuevo)",
+          "optionDsc": "string — texto de la opción (ej: 'Rosado')",
+          "elementId": "elementId del bloque Lista al que pertenece",
+          "elementOrder": "number — orden de la opción dentro de la lista (1-indexed)",
+          "captureElementId": "mismo que elementId"
+        },
+        "response": "JSON con { id: <id_de_la_opción_creada> }",
+        "side_effect": "Actualiza el li.option-list con data-option-id=<id> para reconocido en serialización posterior",
+        "status": "confirmed_via_js_source"
+      },
+      "update_task_metadata": {
+        "method": "POST",
+        "path": "/moduleCapture/update",
+        "header": { "saveAction": true },
+        "payload": {
+          "type": "\"multiAnswer\"",
+          "multiAnswer": "boolean",
+          "moduleId": "number"
+        },
+        "trigger": "Cambio en checkbox multipleAnswers",
+        "status": "confirmed_via_js"
+      },
+      "update_scope": {
+        "method": "POST",
+        "path": "/moduleCapture/scopeServices",
+        "function_name": "saveAjaxScopeElementProAndExh",
+        "known_params": ["type", "catalogId", "moduleId"],
+        "status": "confirmed_via_js"
+      }
+    },
+    "auth_type": "session_cookie",
+    "autosave_delay_ms": 2000,
+    "change_detection": "compareJson(generalJson, currentJson) — solo guarda si hay diferencia",
+    "notes": "editor.getString() retorna JSON string del array de bloques. El campo 'elementsArray' del POST es ese JSON string (no el objeto — es el string completo)."
+  },
+  "week1_real_examples": {
+    "status": "closed",
+    "source_of_truth": "MCP Google Chrome + Network (sin simulacion)",
+    "task_context": {
+      "task_ui_id": 177281,
+      "module_id": 447911,
+      "moduleDsc": "FUNDAMENTALES X SKU DH",
+      "url": "https://webapp.storecheck.com/moduleCapture/create"
+    },
+    "counter": {
+      "target_min": 20,
+      "captured_examples": 20,
+      "successful_examples": 20,
+      "failed_examples": 0,
+      "closure_ready": true
+    },
+    "request_template_confirmed": {
+      "endpoint": "POST /moduleCapture/update",
+      "payload_min": {
+        "type": "element",
+        "moduleId": 447911,
+        "elementsArray_contains": [
+          "elementId=2076179 (bloque temporal)",
+          "captureDataType=<tipo bajo prueba>",
+          "name=TMP-W1-<indice>-<label>"
+        ]
+      },
+      "response_ok": "[] (HTTP 200)",
+      "response_error": "HTML error page 'An error has occurred' (HTTP 500)"
+    },
+    "examples": [
+      {"idx": 1, "captureDataType": "36", "label": "Código de barras", "network_reqid": 1581, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 2, "captureDataType": "35", "label": "Código QR", "network_reqid": 1582, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 3, "captureDataType": "2", "label": "Decimal", "network_reqid": 1583, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 4, "captureDataType": "1", "label": "Entero", "network_reqid": 1584, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 5, "captureDataType": "8", "label": "Fecha", "network_reqid": 1585, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 6, "captureDataType": "10", "label": "Fecha y Hora", "network_reqid": 1586, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 7, "captureDataType": "37", "label": "Firma", "network_reqid": 1587, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 8, "captureDataType": "12", "label": "Foto", "network_reqid": 1588, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 9, "captureDataType": "7", "label": "Hecho", "network_reqid": 1589, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 10, "captureDataType": "9", "label": "Hora", "network_reqid": 1590, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 11, "captureDataType": "5", "label": "Lista de ranking", "network_reqid": 1592, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 12, "captureDataType": "4", "label": "Lista de selección múltiple", "network_reqid": 1594, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 13, "captureDataType": "3", "label": "Lista de selección única", "network_reqid": 1596, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 14, "captureDataType": "40", "label": "PDF Online", "network_reqid": 1598, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 15, "captureDataType": "38", "label": "Reporte SQL", "network_reqid": 1600, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 16, "captureDataType": "39", "label": "Reporte URL", "network_reqid": 1602, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 17, "captureDataType": "13", "label": "Satisfacción", "network_reqid": 1603, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 18, "captureDataType": "6", "label": "Si / No", "network_reqid": 1604, "status": "ok", "http_status": 200, "response": "[]"},
+      {"idx": 19, "captureDataType": "11", "label": "Texto", "network_reqid": 1605, "status": "ok", "http_status": 200, "response": "[]"},
+      {
+        "idx": 20,
+        "captureDataType": "34",
+        "label": "Reconocimiento de imagen",
+        "network_reqid": 1613,
+        "status": "ok",
+        "http_status": 200,
+        "response": "[]",
+        "retry_history": {
+          "initial_failure": {
+            "network_reqid": 1607,
+            "http_status": 500,
+            "response": "An error has occurred",
+            "failure_cause": "En el payload serializado por UI, captureDataType del bloque temporal se envía como null."
+          },
+          "successful_retry": {
+            "network_reqid": 1613,
+            "http_status": 200,
+            "response": "[]",
+            "method": "POST /moduleCapture/update (type=element) forzando captureDataType='34' en elementsArray"
+          }
+        }
+      }
+    ],
+    "related_requests": {
+      "list_catalog_side_effects": [1591, 1593, 1595],
+      "report_side_effects": [1597, 1599, 1601],
+      "pre_batch_failure_example": [1578],
+      "retry_resolution": [1613, 1614]
+    },
+    "ui_action_pattern": "Seleccionar bloque temporal en editor, cambiar TIPO DE ACCIÓN y nombre, guardar via /moduleCapture/update (type=element).",
+    "contamination_control": "Bloques productivos restaurados; bloque temporal conservado como 'TMP-W1-NEUTRAL' para no afectar reglas de negocio activas.",
+    "retry_notes": "El selector de tipo en esta tarea no expone captureDataType=34; la persistencia se confirmó vía payload explícito + syncTaskData/moduleDefinition."
+  },
+  "known_limits": {
+    "max_title_length": null,
+    "max_option_length": null,
+    "max_options_per_single_select": null,
+    "mobile_specific_constraints": []
+  },
+  "real_task_example": {
+    "description": "Ejemplo real extraído de window.module.moduleCapture — Tarea de prueba activa",
+    "module_id": 447349,
+    "task_ui_id": 214669,
+    "moduleDsc": "Exhibiciones Walmart PRUEBA",
+    "draftMode": true,
+    "elements": [
+      {
+        "elementId": "2075611",
+        "name": "Foto de exhibición",
+        "captureDataType": "36",
+        "orderElement": "1",
+        "active": true,
+        "mandatory": false,
+        "availableNA": true,
+        "allowedPhotos": false,
+        "multiplePhotos": false,
+        "mandatoryPhotos": false,
+        "countProductLvl": "",
+        "productOption": null,
+        "hasAssociatedProduct": false,
+        "attachmentId": ""
+      },
+      {
+        "elementId": "2075612",
+        "name": "Disponibilidad",
+        "captureDataType": "17",
+        "orderElement": "2",
+        "active": true,
+        "mandatory": true,
+        "availableNA": true,
+        "hasPrecapture": true,
+        "precaptureType": "3",
+        "precaptureTypeDsc": "Llenado previo",
+        "countProductLvl": "3",
+        "productOption": 1,
+        "limitType": "1",
+        "lowerLimit": "",
+        "upperLimit": "",
+        "showHubInfo": false
+      }
+    ]
+  },
+  "discovery_log": [
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-001",
+      "finding": "Plantilla inicial creada; iniciar captura de reglas reales.",
+      "status": "closed"
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-002",
+      "finding": "39 tipos de bloque descubiertos desde SELECT.captureDataType. Grupos: 'Acciones simples' (19), 'Acciones vinculadas a un KPI' (18), 'Otro' (2).",
+      "status": "closed"
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-003",
+      "finding": "window.module.moduleCapture extraído. Contiene estructura completa de tarea con elementos, captureDataType IDs, propiedades de bloque.",
+      "status": "closed"
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-004",
+      "finding": "Endpoints confirmados: POST /moduleCapture/update y POST /moduleCapture/scopeServices. Hidden inputs descubiertos para serialización de bloque.",
+      "status": "closed"
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-005",
+      "finding": "Tipo Texto explorado: propiedades confirmadas en panel de config. Nombre es requerido. Tipo Si/No tiene mismo panel pero sin UI de ramas visible.",
+      "status": "closed",
+      "resolution": "Ramas configuradas desde el bloque hijo (no el padre). Ver conditions y nesting_schema."
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-006",
+      "finding": "captureDataType='1' (Entero) es el valor default al crear un bloque nuevo. DEFINIR LÍMITES dropdown visible para Entero con opción 'Sin límites'.",
+      "status": "open",
+      "pending": "Explorar otros valores de limitType y tipos numéricos adicionales"
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-007",
+      "finding": "IDs captureDataType completos extraídos: diccionario nombre→ID disponible en ui_mapping.known_captureDataType_ids",
+      "status": "closed"
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-008",
+      "finding": "Mecanismo de anidación completamente comprendido. DOM: ol.sortableLists dentro del li padre. editor.getString() retorna 'children' array. 3 tipos de condición: answer/stage/na. Para Si/No 'stage' tiene select answerCondition (1=Si, 0=No). Condición se configura desde BLOQUE HIJO mediante .conditionSection que recibe la forma según captureDataType del padre.",
+      "status": "closed"
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-009",
+      "finding": "API endpoints de guardado completamente mapeados. Update principal: POST /moduleCapture/update con type='element', elementsArray (JSON string de editor.getString()), moduleId. Opciones catálogo: POST /moduleCapture/getAnswerCatalog con type='saveOption'. Autosave a los 2s de inactividad con compareJson.",
+      "status": "closed"
+    },
+    {
+      "date": "2026-03-16",
+      "case_id": "TSK-010",
+      "finding": "Lista de selección única (captureDataType=3) usa .uniqueListSectionForm. Opciones del catálogo se guardan vía API separada antes del save principal. Max 100 opciones. Incluye toggle 'Otro'. Lista múltiple (captureDataType=4) usa misma estructura.",
+      "status": "closed"
+    }
+  ]
+}

@@ -2,8 +2,8 @@
 Script para actualizar columnas específicas para todas las filas del formato 4770.
 
 Este script filtra las filas por ID Formato Storecheck (columna F) y:
-1. Coloca 1 en todas las columnas desde CR hasta DC
-2. Elimina el contenido de las columnas desde CH hasta CQ
+1. Coloca 1 en todas las columnas SAMS
+2. Elimina el contenido de las columnas de COMPETENCIA
 """
 
 import openpyxl
@@ -86,7 +86,7 @@ def rellenar_unos_configuracion_anaquel(wb):
 
 
 def procesar_filtro_formato(wb):
-    """Para ID formato 4770 coloca 1 en columnas SAMS y CD, limpia columnas COMPETENCIA."""
+    """Para ID formato 4770 coloca 1 en SAMS y limpia COMPETENCIA."""
     print("\n--- Procesando filtro de formato (ID 4770) ---")
 
     if "CONFIGURACIÓN DE ANAQUEL" not in wb.sheetnames:
@@ -112,7 +112,6 @@ def procesar_filtro_formato(wb):
     FILA_INICIO_DATOS = 5
 
     idx_columna_formato = column_index_from_string('F')
-    idx_cd = column_index_from_string('CD')
 
     ultima_fila = ws.max_row
     filas_procesadas = 0
@@ -128,10 +127,6 @@ def procesar_filtro_formato(wb):
             for col in range(sams_inicio, sams_fin + 1):
                 ws.cell(row=fila, column=col).value = 1
                 celdas_actualizadas += 1
-
-            # Columna CD con 1
-            ws.cell(row=fila, column=idx_cd).value = 1
-            celdas_actualizadas += 1
 
             # Limpiar columnas COMPETENCIA
             if comp_inicio is not None:

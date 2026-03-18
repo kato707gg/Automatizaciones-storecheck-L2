@@ -1,0 +1,6 @@
+{
+  "bridge": "core.semana2.mcp_bridge_runtime:EnvCallableMcpChromeBridge",
+  "evaluate_fn": "core.semana2.mcp_callables_adapter:evaluate_script",
+  "list_requests_fn": "core.semana2.mcp_callables_adapter:list_network_requests",
+  "get_request_fn": "core.semana2.mcp_callables_adapter:get_network_request"
+}

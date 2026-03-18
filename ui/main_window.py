@@ -15,6 +15,8 @@ from ui.vista_catalogacion import VistaCatalogacion
 from ui.vista_productos import VistaProductos
 from ui.vista_catalogo_lugares import VistaActualizarCatalogoLugares
 from ui.vista_dividir_archivo import VistaDividirArchivo
+from ui.vista_creador_tareas import VistaCreadorTareas
+from core.semana2.mcp_bridge_loader import load_mcp_bridge_from_env
 
 
 HOVER_BG = "#F8FEFF"
@@ -40,8 +42,9 @@ CARDS = [
         "vista": VistaDividirArchivo,
     },
     {
-        "titulo": "Automatización 4",
-        "subtitulo": "Próximamente",
+        "titulo": "Creador de tareas\nautomático",
+        "subtitulo": "Storecheck",
+        "vista": VistaCreadorTareas,
     },
     {
         "titulo": "Automatización 5",
@@ -262,12 +265,20 @@ class MainWindow(QMainWindow):
         self._vista_dividir = VistaDividirArchivo(back_cb=self._go_home)
         self._stack.addWidget(self._vista_dividir)
 
+        # Página 5
+        self._vista_creador_tareas = VistaCreadorTareas(back_cb=self._go_home)
+        bridge = load_mcp_bridge_from_env()
+        if bridge is not None:
+            self._vista_creador_tareas.set_mcp_bridge(bridge)
+        self._stack.addWidget(self._vista_creador_tareas)
+
     # ── Navegación ────────────────────────────────────────────────────
     def _navigate_to(self, vista_class):
         mapping = {
             VistaCatalogacion:              1,
             VistaActualizarCatalogoLugares: 3,
             VistaDividirArchivo:            4,
+            VistaCreadorTareas:             5,
         }
         idx = mapping.get(vista_class)
         if idx is not None:

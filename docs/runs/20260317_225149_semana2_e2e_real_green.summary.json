@@ -1,0 +1,40 @@
+{
+  "run_id": "20260317_225149_semana2_e2e_real_green",
+  "mode": "real-mcp",
+  "task_ui_id": 218101,
+  "module_id": 448010,
+  "result": {
+    "executed": true,
+    "success": true,
+    "reason": "save_task + verify_task con reqid y persistencia efectiva confirmada."
+  },
+  "evidence": {
+    "save_task": {
+      "reqid": 868,
+      "endpoint": "POST /moduleCapture/update",
+      "http_status": 200,
+      "request": "type=moduleScopeType&moduleId=448010&moduleScopeTypeId=1",
+      "response": []
+    },
+    "verify_task": {
+      "reqid": 869,
+      "endpoint": "GET /moduleCapture/syncTaskData?type=moduleDefinition&moduleId=448010",
+      "http_status": 200,
+      "observed": "moduleScopeTypeId=1"
+    },
+    "restore_task": {
+      "reqid": 870,
+      "endpoint": "POST /moduleCapture/update",
+      "http_status": 200,
+      "request": "type=moduleScopeType&moduleId=448010&moduleScopeTypeId=0",
+      "response": []
+    },
+    "verify_restore": {
+      "reqid": 871,
+      "endpoint": "GET /moduleCapture/syncTaskData?type=moduleDefinition&moduleId=448010",
+      "http_status": 200,
+      "observed": "moduleScopeTypeId=0"
+    }
+  },
+  "closure": "Caso E2E real MCP cerrado en verde con rollback validado."
+}

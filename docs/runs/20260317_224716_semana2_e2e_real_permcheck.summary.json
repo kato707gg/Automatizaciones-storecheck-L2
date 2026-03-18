@@ -1,0 +1,36 @@
+{
+  "run_id": "20260317_224716_semana2_e2e_real_permcheck",
+  "mode": "real-mcp",
+  "module_id": 448009,
+  "task_context": "moduleCapture/create",
+  "result": {
+    "executed": true,
+    "success": false,
+    "reason": "save_task devolvió permit=false (sin persistencia efectiva)."
+  },
+  "evidence": {
+    "save_task": {
+      "reqid": 604,
+      "endpoint": "POST /moduleCapture/update",
+      "http_status": 200,
+      "response": {"permit": false, "roleDsc": "Admin DHERNANDEZ"}
+    },
+    "verify_task": {
+      "reqid": 605,
+      "endpoint": "GET /moduleCapture/syncTaskData?type=moduleDefinition&moduleId=448009",
+      "http_status": 200,
+      "observed": "name sin marker temporal"
+    },
+    "restore_task": {
+      "reqid": 606,
+      "endpoint": "POST /moduleCapture/update",
+      "http_status": 200,
+      "response": {"permit": false, "roleDsc": "Admin DHERNANDEZ"}
+    }
+  },
+  "blocking_finding": {
+    "type": "permission",
+    "details": "El rol/sesión actual puede consultar definición pero no persistir ediciones de módulo (permit=false)."
+  },
+  "next_action": "Reintentar con usuario/perfil que tenga permiso de edición efectiva sobre el módulo 448009 o con tarea sandbox editable."
+}

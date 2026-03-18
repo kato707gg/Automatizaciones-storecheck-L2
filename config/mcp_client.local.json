@@ -1,0 +1,16 @@
+{
+  "client_factory": "core.semana2.mcp_client_template:create_mcp_client",
+  "server_command": [
+    "C:/Program Files/nodejs/npx.cmd",
+    "-y",
+    "chrome-devtools-mcp",
+    "--browserUrl",
+    "http://127.0.0.1:9222",
+    "--no-usage-statistics"
+  ],
+  "tool_evaluate": "evaluate_script",
+  "tool_list_requests": "list_network_requests",
+  "tool_get_request": "get_network_request",
+  "request_timeout_seconds": 15,
+  "preflight_debug_url": "http://127.0.0.1:9222/json/version"
+}
