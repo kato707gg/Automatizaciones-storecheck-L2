@@ -55,6 +55,7 @@ class McpScopeTypeBackend(ScopeTypeBackend):
 
     Implementa:
     - update_module_scope_type(module_id, scope_type_id)
+    - update_module_elements(module_id, elements)
     - get_module_definition(module_id)
 
     Captura reqid por diff de red (antes/después) y usa get_network_request
@@ -89,6 +90,44 @@ class McpScopeTypeBackend(ScopeTypeBackend):
         response_json = self._extract_response_json(eval_result, request_details)
         if reqid is None and status_code == 200:
             reqid = self._fallback_reqid(prefix=1)
+
+        return NetworkCallEvidence(
+            reqid=reqid,
+            status_code=status_code,
+            endpoint=endpoint,
+            request_excerpt=request_excerpt,
+            response_excerpt=response_excerpt,
+            response_json=response_json,
+        )
+
+    def update_module_elements(
+        self,
+        module_id: int,
+        elements: list[dict[str, Any]],
+    ) -> NetworkCallEvidence:
+        endpoint = "/moduleCapture/update"
+        request_excerpt = (
+            f"type=element&moduleId={module_id}&elementsCount={len(elements)}"
+        )
+
+        reqids_before = self._snapshot_reqids()
+        eval_result = self.bridge.evaluate_script(
+            self._build_update_elements_script(module_id=module_id, elements=elements)
+        )
+        reqids_after = self._snapshot_reqids()
+
+        reqid = self._resolve_reqid(
+            reqids_before=reqids_before,
+            reqids_after=reqids_after,
+            endpoint_contains=endpoint,
+        )
+        request_details = self._safe_get_network_request(reqid)
+
+        status_code = self._coalesce_status(eval_result, request_details)
+        response_excerpt = self._coalesce_response_excerpt(eval_result, request_details)
+        response_json = self._extract_response_json(eval_result, request_details)
+        if reqid is None and status_code == 200:
+            reqid = self._fallback_reqid(prefix=3)
 
         return NetworkCallEvidence(
             reqid=reqid,
@@ -316,4 +355,36 @@ class McpScopeTypeBackend(ScopeTypeBackend):
     body_preview: text.slice(0, 400),
     response_json
   }};
+}}"""
+
+        @staticmethod
+        def _build_update_elements_script(module_id: int, elements: list[dict[str, Any]]) -> str:
+                serialized_elements = json.dumps(elements, ensure_ascii=False)
+                return f"""async () => {{
+    const body = new URLSearchParams();
+    const elements = {serialized_elements};
+    body.set('type', 'element');
+    body.set('moduleId', String({module_id}));
+    body.set('elementsArray', JSON.stringify(elements));
+
+    const res = await fetch('/moduleCapture/update', {{
+        method: 'POST',
+        credentials: 'include',
+        headers: {{
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+        }},
+        body: body.toString()
+    }});
+
+    const text = await res.text();
+    let response_json = null;
+    try {{ response_json = JSON.parse(text); }} catch (e) {{}}
+
+    return {{
+        status_code: res.status,
+        endpoint: '/moduleCapture/update',
+        body_preview: text.slice(0, 400),
+        response_json
+    }};
 }}"""

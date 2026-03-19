@@ -51,6 +51,70 @@ class _McpConnectionWorker(QObject):
             self.error.emit(str(exc))
 
 
+class _RealMcpRunWorker(QObject):
+    success = Signal(object)
+    error = Signal(str)
+
+    def __init__(
+        self,
+        bridge: McpChromeBridge,
+        prompt: str,
+        module_id: int,
+        original_scope: int,
+        target_scope: int,
+        output_dir: str,
+    ):
+        super().__init__()
+        self._bridge = bridge
+        self._prompt = prompt
+        self._module_id = module_id
+        self._original_scope = original_scope
+        self._target_scope = target_scope
+        self._output_dir = output_dir
+
+    def run(self):
+        try:
+            backend = McpScopeTypeBackend(bridge=self._bridge)
+            runner = ScopeTypePatternRunner(
+                module_id=self._module_id,
+                original_scope_type=self._original_scope,
+                target_scope_type=self._target_scope,
+                backend=backend,
+                restore_on_verify=True,
+            )
+            orchestrator = Semana2Orchestrator(
+                parser=RuleBasedTaskParser(),
+                validator=TaskIRValidator(),
+                executor=PlaybookExecutor(runner=runner),
+                auto_corrector=NoOpAutoCorrector(),
+                max_retries=1,
+            )
+            result = orchestrator.run(prompt=self._prompt)
+            payload = result.to_dict()
+
+            artifacts: dict[str, str] = {}
+            execution_data = payload.get("execution_result")
+            if isinstance(execution_data, dict):
+                execution_result = VistaCreadorTareas._build_execution_result(execution_data)
+                store = EvidenceStore(self._output_dir)
+                jsonl_path, summary_path = store.write_execution(
+                    case_id="ui_real_mcp",
+                    execution_result=execution_result,
+                )
+                artifacts["jsonl"] = os.path.abspath(jsonl_path)
+                artifacts["summary"] = os.path.abspath(summary_path)
+
+            slug = datetime.now().strftime("%Y%m%d_%H%M%S")
+            payload_path = os.path.join(self._output_dir, f"{slug}_ui_real_mcp.payload.json")
+            with open(payload_path, "w", encoding="utf-8") as fp:
+                json.dump(payload, fp, ensure_ascii=False, indent=2)
+
+            artifacts["payload"] = os.path.abspath(payload_path)
+            self.success.emit({"payload": payload, "artifacts": artifacts})
+        except Exception as exc:
+            self.error.emit(str(exc))
+
+
 class VistaCreadorTareas(QWidget):
     def __init__(self, back_cb=None, parent=None):
         super().__init__(parent)
@@ -60,6 +124,8 @@ class VistaCreadorTareas(QWidget):
         self._mcp_bridge: McpChromeBridge | None = None
         self._mcp_test_thread: QThread | None = None
         self._mcp_test_worker: _McpConnectionWorker | None = None
+        self._mcp_real_thread: QThread | None = None
+        self._mcp_real_worker: _RealMcpRunWorker | None = None
         self.setStyleSheet("VistaCreadorTareas { background-color: #FFFFFF; }")
 
         outer = QVBoxLayout(self)
@@ -418,6 +484,14 @@ class VistaCreadorTareas(QWidget):
             )
             return
 
+        if self._mcp_real_thread is not None and self._mcp_real_thread.isRunning():
+            QMessageBox.information(
+                self,
+                "Corrida en curso",
+                "La corrida real MCP ya está ejecutándose. Espera a que termine."
+            )
+            return
+
         try:
             module_id = int(self._module_id.text().strip())
             original_scope = int(self._scope_original.text().strip())
@@ -426,74 +500,29 @@ class VistaCreadorTareas(QWidget):
             QMessageBox.warning(self, "Campos inválidos", "module_id y scope deben ser numéricos.")
             return
 
-        try:
-            backend = McpScopeTypeBackend(bridge=self._mcp_bridge)
-            runner = ScopeTypePatternRunner(
-                module_id=module_id,
-                original_scope_type=original_scope,
-                target_scope_type=target_scope,
-                backend=backend,
-                restore_on_verify=True,
-            )
-            orchestrator = Semana2Orchestrator(
-                parser=RuleBasedTaskParser(),
-                validator=TaskIRValidator(),
-                executor=PlaybookExecutor(runner=runner),
-                auto_corrector=NoOpAutoCorrector(),
-                max_retries=1,
-            )
-            result = orchestrator.run(prompt=prompt)
-            payload = result.to_dict()
-            self._last_payload = payload
+        self._btn_real.setEnabled(False)
+        self._status.setStyleSheet("color: #1565C0; font-size: 10pt;")
+        self._status.setText("Ejecutando corrida real MCP...")
 
-            output_dir = self._default_runs_dir()
-            execution_data = payload.get("execution_result")
-            if isinstance(execution_data, dict):
-                execution_result = self._build_execution_result(execution_data)
-                store = EvidenceStore(output_dir)
-                jsonl_path, summary_path = store.write_execution(
-                    case_id="ui_real_mcp",
-                    execution_result=execution_result,
-                )
-            else:
-                jsonl_path, summary_path = "", ""
+        output_dir = self._default_runs_dir()
+        self._mcp_real_thread = QThread(self)
+        self._mcp_real_worker = _RealMcpRunWorker(
+            bridge=self._mcp_bridge,
+            prompt=prompt,
+            module_id=module_id,
+            original_scope=original_scope,
+            target_scope=target_scope,
+            output_dir=output_dir,
+        )
+        self._mcp_real_worker.moveToThread(self._mcp_real_thread)
 
-            slug = datetime.now().strftime("%Y%m%d_%H%M%S")
-            payload_path = os.path.join(output_dir, f"{slug}_ui_real_mcp.payload.json")
-            with open(payload_path, "w", encoding="utf-8") as fp:
-                json.dump(payload, fp, ensure_ascii=False, indent=2)
-
-            self._last_artifacts = {
-                "jsonl": os.path.abspath(jsonl_path) if jsonl_path else "",
-                "summary": os.path.abspath(summary_path) if summary_path else "",
-                "payload": os.path.abspath(payload_path),
-            }
-            self._preview.setPlainText(json.dumps(payload, ensure_ascii=False, indent=2))
-
-            steps = payload.get("execution_result", {}).get("steps", [])
-            reqids = [str(step.get("reqid")) for step in steps if step.get("reqid") is not None]
-            success = payload.get("execution_result", {}).get("success", False)
-
-            if success:
-                self._status.setStyleSheet("color: #2E7D32; font-size: 10pt;")
-                self._status.setText(
-                    f"Corrida MCP real exitosa. reqids: {', '.join(reqids) if reqids else 'N/A'}"
-                )
-            else:
-                self._status.setStyleSheet("color: #C62828; font-size: 10pt;")
-                self._status.setText(
-                    f"Corrida MCP real finalizada con incidencias. reqids: {', '.join(reqids) if reqids else 'N/A'}"
-                )
-
-            QMessageBox.information(
-                self,
-                "Corrida real completada",
-                "Se ejecutó el flujo real MCP y se guardaron artefactos en docs/runs."
-            )
-        except Exception as exc:
-            self._status.setStyleSheet("color: #C62828; font-size: 10pt;")
-            self._status.setText(f"Error en corrida real MCP: {exc}")
-            QMessageBox.critical(self, "Error MCP", str(exc))
+        self._mcp_real_thread.started.connect(self._mcp_real_worker.run)
+        self._mcp_real_worker.success.connect(self._on_real_mcp_success)
+        self._mcp_real_worker.error.connect(self._on_real_mcp_error)
+        self._mcp_real_worker.success.connect(self._mcp_real_thread.quit)
+        self._mcp_real_worker.error.connect(self._mcp_real_thread.quit)
+        self._mcp_real_thread.finished.connect(self._cleanup_real_mcp_thread)
+        self._mcp_real_thread.start()
 
     def _test_mcp_connection(self):
         if self._mcp_bridge is None:
@@ -527,6 +556,58 @@ class VistaCreadorTareas(QWidget):
         self._mcp_test_worker.error.connect(self._mcp_test_thread.quit)
         self._mcp_test_thread.finished.connect(self._cleanup_mcp_test_thread)
         self._mcp_test_thread.start()
+
+    def _on_real_mcp_success(self, data: object):
+        payload = {}
+        artifacts = {}
+        if isinstance(data, dict):
+            raw_payload = data.get("payload")
+            raw_artifacts = data.get("artifacts")
+            if isinstance(raw_payload, dict):
+                payload = raw_payload
+            if isinstance(raw_artifacts, dict):
+                artifacts = raw_artifacts
+
+        self._last_payload = payload
+        self._last_artifacts = artifacts if artifacts else None
+        self._preview.setPlainText(json.dumps(payload, ensure_ascii=False, indent=2))
+
+        steps = payload.get("execution_result", {}).get("steps", [])
+        reqids = [str(step.get("reqid")) for step in steps if step.get("reqid") is not None]
+        success = payload.get("execution_result", {}).get("success", False)
+
+        if success:
+            self._status.setStyleSheet("color: #2E7D32; font-size: 10pt;")
+            self._status.setText(
+                f"Corrida MCP real exitosa. reqids: {', '.join(reqids) if reqids else 'N/A'}"
+            )
+        else:
+            self._status.setStyleSheet("color: #C62828; font-size: 10pt;")
+            self._status.setText(
+                f"Corrida MCP real finalizada con incidencias. reqids: {', '.join(reqids) if reqids else 'N/A'}"
+            )
+
+        QMessageBox.information(
+            self,
+            "Corrida real completada",
+            "Se ejecutó el flujo real MCP y se guardaron artefactos en docs/runs."
+        )
+
+    def _on_real_mcp_error(self, error_text: str):
+        self._status.setStyleSheet("color: #C62828; font-size: 10pt;")
+        self._status.setText(f"Error en corrida real MCP: {error_text}")
+        QMessageBox.critical(self, "Error MCP", error_text)
+
+    def _cleanup_real_mcp_thread(self):
+        self._btn_real.setEnabled(True)
+
+        if self._mcp_real_worker is not None:
+            self._mcp_real_worker.deleteLater()
+            self._mcp_real_worker = None
+
+        if self._mcp_real_thread is not None:
+            self._mcp_real_thread.deleteLater()
+            self._mcp_real_thread = None
 
     def _on_mcp_test_success(self, preview: str):
         self._status.setStyleSheet("color: #2E7D32; font-size: 10pt;")

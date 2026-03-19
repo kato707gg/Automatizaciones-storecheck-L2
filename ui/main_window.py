@@ -16,6 +16,7 @@ from ui.vista_productos import VistaProductos
 from ui.vista_catalogo_lugares import VistaActualizarCatalogoLugares
 from ui.vista_dividir_archivo import VistaDividirArchivo
 from ui.vista_creador_tareas import VistaCreadorTareas
+from ui.vista_selector_formato import VistaSelectorFormato
 from core.semana2.mcp_bridge_loader import load_mcp_bridge_from_env
 
 
@@ -47,8 +48,9 @@ CARDS = [
         "vista": VistaCreadorTareas,
     },
     {
-        "titulo": "Automatización 5",
-        "subtitulo": "Próximamente",
+        "titulo": "Selector de Formatos",
+        "subtitulo": "Storecheck",
+        "vista": VistaSelectorFormato,
     },
     {
         "titulo": "Automatización 6",
@@ -272,6 +274,10 @@ class MainWindow(QMainWindow):
             self._vista_creador_tareas.set_mcp_bridge(bridge)
         self._stack.addWidget(self._vista_creador_tareas)
 
+        # Página 6
+        self._vista_selector_formato = VistaSelectorFormato(back_cb=self._go_home)
+        self._stack.addWidget(self._vista_selector_formato)
+
     # ── Navegación ────────────────────────────────────────────────────
     def _navigate_to(self, vista_class):
         mapping = {
@@ -279,6 +285,7 @@ class MainWindow(QMainWindow):
             VistaActualizarCatalogoLugares: 3,
             VistaDividirArchivo:            4,
             VistaCreadorTareas:             5,
+            VistaSelectorFormato:           6,
         }
         idx = mapping.get(vista_class)
         if idx is not None:

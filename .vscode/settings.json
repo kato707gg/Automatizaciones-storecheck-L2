@@ -1,3 +1,4 @@
 {
-    "cSpell.language": "en,es-ES"
+    "cSpell.language": "en,es-ES",
+    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe"
 }

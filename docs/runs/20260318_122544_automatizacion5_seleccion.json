@@ -1,0 +1,41 @@
+{
+  "fecha": "2026-03-18 12:25:44",
+  "total": 31,
+  "exitosos": [
+    "CRI- WALMART",
+    "CRI- MAS X MENOS",
+    "CRI- MAXI PALI",
+    "CRI- PALI",
+    "CRI- MEGASUPER",
+    "CRI- SUPER AHORRO",
+    "CRI- SUPER SARETTO",
+    "CRI- SUPER VIQUEZ",
+    "CRI- AMPM",
+    "CRI- MUSSI"
+  ],
+  "ignorados": [
+    "CRI- AUTOMERCADO",
+    "CRI- PERIMERCADOS",
+    "CRI- SUPER COMPRO",
+    "CRI- RESTO AUTOSERVICIOS",
+    "CRI- FRESH MARKET",
+    "CRI- VINDI",
+    "CRI- FARMACIA LA BOMBA",
+    "CRI- FARMACIAS SUCRE",
+    "CRI- FISCHEL",
+    "CRI- FARMACIA SABA",
+    "CRI- FARMACIAS",
+    "CRI- FARMAVALUE",
+    "CRI- FARMACIA METROPOLITANO",
+    "CRI- PRICESMART",
+    "CRI- ARBOLEDA",
+    "CRI- DIMARPA",
+    "CRI- DIFAR",
+    "CRI- GIFF",
+    "CRI- DIQUIQUE",
+    "CRI- ROBASA GUANACASTE",
+    "CRI- ROBASA SAN CARLOS"
+  ],
+  "fallidos": {},
+  "archivo_resultado": "C:\\Users\\STOCK-LAP522\\OneDrive - Storecheck S.A. de C.V\\Documentos\\Automatizaciones-storecheck-L2\\docs\\runs\\20260318_122544_automatizacion5_seleccion.json"
+}
