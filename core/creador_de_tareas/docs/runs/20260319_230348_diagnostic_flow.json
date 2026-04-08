@@ -1,0 +1,132 @@
+{
+  "diagnostic_timestamp": "2026-03-19T23:03:48.873864",
+  "module_id": 448714,
+  "task_ir": {
+    "task_name": "Tarea generada desde lenguaje natural",
+    "blocks_count": 3,
+    "edges_count": 2
+  },
+  "page_context": {
+    "title": "Storecheck III",
+    "url": "https://webapp.storecheck.com/",
+    "moduleId": null,
+    "blockCount": 0,
+    "draftMode": null
+  },
+  "execution_steps": [
+    {
+      "action": "open_task_editor",
+      "endpoint": null,
+      "http_status": null,
+      "reqid": null,
+      "success": true,
+      "request_excerpt": "{'url': 'https://webapp.storecheck.com/moduleCapture/create'}",
+      "response_excerpt": null,
+      "notes": "Step S01 delegado al runner (sin tráfico de red requerido)."
+    },
+    {
+      "action": "create_block",
+      "endpoint": "/moduleCapture/syncTaskData?type=moduleDefinition&moduleId=448714",
+      "http_status": 401,
+      "reqid": 1,
+      "success": false,
+      "request_excerpt": "type=moduleDefinition,moduleId=448714",
+      "response_excerpt": "<empty response>",
+      "notes": "pre_cleanup_failed: module_definition_unavailable"
+    },
+    {
+      "action": "update_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 0,
+      "reqid": null,
+      "success": false,
+      "request_excerpt": "type=element&operation=update_block&moduleId=448714&blockId=b1&blockElementId=None&mandatory=True&availableNA=True&optionsCount=0",
+      "response_excerpt": "missing_editor_dependencies",
+      "notes": "update_block block_id=b1 mandatory=None availableNA=None (HTTP 0)"
+    },
+    {
+      "action": "create_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 0,
+      "reqid": null,
+      "success": false,
+      "request_excerpt": "type=newElement&operation=create_block&moduleId=448714&blockId=b2&captureDataType=12&label=Foto rama Sí",
+      "response_excerpt": "missing_editor_dependencies",
+      "notes": "pre_cleanup_cached; create_block block_id=b2 captureDataType=12 mappedElementId=None (HTTP 0)"
+    },
+    {
+      "action": "update_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 0,
+      "reqid": null,
+      "success": false,
+      "request_excerpt": "type=element&operation=update_block&moduleId=448714&blockId=b2&blockElementId=None&mandatory=True&availableNA=True&optionsCount=0",
+      "response_excerpt": "missing_editor_dependencies",
+      "notes": "update_block block_id=b2 mandatory=None availableNA=None (HTTP 0)"
+    },
+    {
+      "action": "create_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 0,
+      "reqid": null,
+      "success": false,
+      "request_excerpt": "type=newElement&operation=create_block&moduleId=448714&blockId=b3&captureDataType=11&label=Texto rama No",
+      "response_excerpt": "missing_editor_dependencies",
+      "notes": "pre_cleanup_cached; create_block block_id=b3 captureDataType=11 mappedElementId=None (HTTP 0)"
+    },
+    {
+      "action": "update_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 0,
+      "reqid": null,
+      "success": false,
+      "request_excerpt": "type=element&operation=update_block&moduleId=448714&blockId=b3&blockElementId=None&mandatory=True&availableNA=True&optionsCount=0",
+      "response_excerpt": "missing_editor_dependencies",
+      "notes": "update_block block_id=b3 mandatory=None availableNA=None (HTTP 0)"
+    },
+    {
+      "action": "attach_condition",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 0,
+      "reqid": null,
+      "success": false,
+      "request_excerpt": "type=element&operation=attach_condition&moduleId=448714&parentBlockId=b1&childBlockId=b2&conditionType=stage&conditionValue=1&parentElementId=None&childElementId=None",
+      "response_excerpt": "missing_editor_dependencies",
+      "notes": "attach_condition b1->b2 type=stage value=1 parentElementId=None childElementId=None observedType=None observedValue=None (HTTP 0) retry_observedType=None retry_observedValue=None retry_http=0 retry_parentElementId=None retry_childElementId=None"
+    },
+    {
+      "action": "attach_condition",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 0,
+      "reqid": null,
+      "success": false,
+      "request_excerpt": "type=element&operation=attach_condition&moduleId=448714&parentBlockId=b1&childBlockId=b3&conditionType=stage&conditionValue=0&parentElementId=None&childElementId=None",
+      "response_excerpt": "missing_editor_dependencies",
+      "notes": "attach_condition b1->b3 type=stage value=0 parentElementId=None childElementId=None observedType=None observedValue=None (HTTP 0) retry_observedType=None retry_observedValue=None retry_http=0 retry_parentElementId=None retry_childElementId=None"
+    },
+    {
+      "action": "save_task",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 401,
+      "reqid": 11,
+      "success": false,
+      "request_excerpt": "type=moduleScopeType&moduleId=448714&moduleScopeTypeId=0",
+      "response_excerpt": "<empty response>",
+      "notes": "scopeType -> 0 (HTTP 401)"
+    },
+    {
+      "action": "verify_task",
+      "endpoint": "/moduleCapture/syncTaskData?type=moduleDefinition&moduleId=448714",
+      "http_status": 401,
+      "reqid": 12,
+      "success": false,
+      "request_excerpt": "type=moduleDefinition,moduleId=448714",
+      "response_excerpt": "<empty response>",
+      "notes": "observed scopeType=None, expected=0"
+    }
+  ],
+  "execution_summary": {
+    "success": false,
+    "steps_executed": []
+  }
+}

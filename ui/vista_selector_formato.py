@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.automatizacion5.selector_formato import (
+from core.selector_de_formatos.selector_formato import (
     SelectionSummary,
     WebSelectionSession,
     load_items_from_excel,

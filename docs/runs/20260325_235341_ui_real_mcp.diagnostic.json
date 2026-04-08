@@ -1,0 +1,28 @@
+{
+  "diagnostics": [
+    {
+      "ts": "2026-03-26T05:53:36.758Z",
+      "msg": "editor.getString currentJson",
+      "length": 523,
+      "sample": "[{\"captureDataType\":\"11\",\"id\":\"elementtmp-b1-1774504416753\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachment"
+    },
+    {
+      "ts": "2026-03-26T05:53:36.758Z",
+      "msg": "editor.getString currentJson",
+      "length": 523,
+      "sample": "[{\"captureDataType\":\"11\",\"id\":\"elementtmp-b1-1774504416753\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachment"
+    },
+    {
+      "ts": "2026-03-26T05:53:36.758Z",
+      "msg": "editor.getString currentJson",
+      "length": 523,
+      "sample": "[{\"captureDataType\":\"11\",\"id\":\"elementtmp-b1-1774504416753\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachment"
+    },
+    {
+      "ts": "2026-03-26T05:53:36.758Z",
+      "msg": "editor.getString currentJson",
+      "length": 523,
+      "sample": "[{\"captureDataType\":\"11\",\"id\":\"elementtmp-b1-1774504416753\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachment"
+    }
+  ]
+}

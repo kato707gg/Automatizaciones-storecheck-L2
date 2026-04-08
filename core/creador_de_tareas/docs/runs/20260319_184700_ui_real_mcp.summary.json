@@ -1,0 +1,14 @@
+{
+  "executed": true,
+  "success": true,
+  "steps_count": 11,
+  "network_steps_with_reqid": 8,
+  "steps_with_operational_success_reason": 0,
+  "operational_success_reason_counts": {},
+  "final_snapshot": {
+    "task_name": "Tarea generada desde lenguaje natural",
+    "planned_steps": 11,
+    "create_update_network_evidence_complete": true,
+    "network_evidence_complete": true
+  }
+}

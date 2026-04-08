@@ -17,7 +17,7 @@ from ui.vista_catalogo_lugares import VistaActualizarCatalogoLugares
 from ui.vista_dividir_archivo import VistaDividirArchivo
 from ui.vista_creador_tareas import VistaCreadorTareas
 from ui.vista_selector_formato import VistaSelectorFormato
-from core.semana2.mcp_bridge_loader import load_mcp_bridge_from_env
+from core.creador_de_tareas.mcp_bridge_loader import load_mcp_bridge_from_env
 
 
 HOVER_BG = "#F8FEFF"

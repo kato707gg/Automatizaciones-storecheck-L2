@@ -1,0 +1,132 @@
+{
+  "diagnostic_timestamp": "2026-03-19T23:31:58.869991",
+  "module_id": 448714,
+  "task_ir": {
+    "task_name": "Tarea generada desde lenguaje natural",
+    "blocks_count": 3,
+    "edges_count": 2
+  },
+  "page_context": {
+    "title": "Storecheck",
+    "url": "https://webapp.storecheck.com/moduleCapture/create",
+    "moduleId": 448719,
+    "blockCount": 0,
+    "draftMode": true
+  },
+  "execution_steps": [
+    {
+      "action": "open_task_editor",
+      "endpoint": null,
+      "http_status": null,
+      "reqid": null,
+      "success": true,
+      "request_excerpt": "{'url': 'https://webapp.storecheck.com/moduleCapture/create'}",
+      "response_excerpt": null,
+      "notes": "Step S01 delegado al runner (sin tráfico de red requerido)."
+    },
+    {
+      "action": "create_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 4,
+      "success": true,
+      "request_excerpt": "type=newElement&operation=create_block&moduleId=448714&blockId=b1&captureDataType=6&label=¿Existe producto en anaquel?",
+      "response_excerpt": "{\"elementId\":2078537,\"elementJson\":null}",
+      "notes": "pre_cleanup_removed=1; create_block block_id=b1 captureDataType=6 mappedElementId=2078537 (HTTP 200)"
+    },
+    {
+      "action": "update_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 5,
+      "success": true,
+      "request_excerpt": "type=element&operation=update_block&moduleId=448714&blockId=b1&blockElementId=2078537&mandatory=True&availableNA=True&optionsCount=0",
+      "response_excerpt": "[]",
+      "notes": "update_block block_id=b1 mandatory=True availableNA=True (HTTP 200)"
+    },
+    {
+      "action": "create_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 7,
+      "success": true,
+      "request_excerpt": "type=newElement&operation=create_block&moduleId=448714&blockId=b2&captureDataType=12&label=Foto rama Sí",
+      "response_excerpt": "{\"elementId\":2078538,\"elementJson\":null}",
+      "notes": "pre_cleanup_cached; create_block block_id=b2 captureDataType=12 mappedElementId=2078538 (HTTP 200)"
+    },
+    {
+      "action": "update_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 8,
+      "success": true,
+      "request_excerpt": "type=element&operation=update_block&moduleId=448714&blockId=b2&blockElementId=2078538&mandatory=True&availableNA=True&optionsCount=0",
+      "response_excerpt": "[]",
+      "notes": "update_block block_id=b2 mandatory=True availableNA=True (HTTP 200)"
+    },
+    {
+      "action": "create_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 10,
+      "success": true,
+      "request_excerpt": "type=newElement&operation=create_block&moduleId=448714&blockId=b3&captureDataType=11&label=Texto rama No",
+      "response_excerpt": "{\"elementId\":2078539,\"elementJson\":null}",
+      "notes": "pre_cleanup_cached; create_block block_id=b3 captureDataType=11 mappedElementId=2078539 (HTTP 200)"
+    },
+    {
+      "action": "update_block",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 11,
+      "success": true,
+      "request_excerpt": "type=element&operation=update_block&moduleId=448714&blockId=b3&blockElementId=2078539&mandatory=True&availableNA=True&optionsCount=0",
+      "response_excerpt": "[]",
+      "notes": "update_block block_id=b3 mandatory=True availableNA=True (HTTP 200)"
+    },
+    {
+      "action": "attach_condition",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 13,
+      "success": true,
+      "request_excerpt": "type=element&operation=attach_condition&moduleId=448714&parentBlockId=b1&childBlockId=b2&conditionType=stage&conditionValue=1&parentElementId=2078537&childElementId=2078538",
+      "response_excerpt": "[]",
+      "notes": "attach_condition b1->b2 type=stage value=1 parentElementId=2078537 childElementId=2078538 observedType=stage observedValue=1 (HTTP 200)"
+    },
+    {
+      "action": "attach_condition",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 15,
+      "success": true,
+      "request_excerpt": "type=element&operation=attach_condition&moduleId=448714&parentBlockId=b1&childBlockId=b3&conditionType=stage&conditionValue=0&parentElementId=2078537&childElementId=2078539",
+      "response_excerpt": "[]",
+      "notes": "attach_condition b1->b3 type=stage value=0 parentElementId=2078537 childElementId=2078539 observedType=stage observedValue=0 (HTTP 200)"
+    },
+    {
+      "action": "save_task",
+      "endpoint": "/moduleCapture/update",
+      "http_status": 200,
+      "reqid": 17,
+      "success": true,
+      "request_excerpt": "type=moduleScopeType&moduleId=448714&moduleScopeTypeId=0",
+      "response_excerpt": "[]",
+      "notes": "scopeType -> 0 (HTTP 200)"
+    },
+    {
+      "action": "verify_task",
+      "endpoint": "/moduleCapture/syncTaskData?type=moduleDefinition&moduleId=448714",
+      "http_status": 200,
+      "reqid": 18,
+      "success": true,
+      "request_excerpt": "type=moduleDefinition,moduleId=448714",
+      "response_excerpt": "{\"moduleCapture\":{\"id\":448714,\"moduleDsc\":\"Prueba automa\",\"draftMode\":false,\"elements\":{\"elements\":[{\"hasPrecapture\":false,\"captureDataType\":\"6\",\"jsonHubPrecapture\":\"\",\"multiplePhotos\":false,\"countProductLvl\":\"\",\"mandatory\":true,\"precaptureTypeDsc\":\"\",\"children\":[{\"elementId\":\"2078538\",\"productOption\":null,\"orderElement\":\"2\",\"hasAssociatedProduct\":false,\"captureDataType\":\"12\",\"multiplePhotos\":fals",
+      "notes": "observed scopeType=0, expected=0"
+    }
+  ],
+  "execution_summary": {
+    "success": false,
+    "steps_executed": []
+  }
+}

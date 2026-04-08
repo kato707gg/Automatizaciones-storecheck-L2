@@ -7,13 +7,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime
 
 from PySide6.QtCore import QObject, QThread, Qt, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QLineEdit,
     QLabel,
     QMessageBox,
     QPlainTextEdit,
@@ -23,14 +23,18 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.semana2.autofix_stub import NoOpAutoCorrector
-from core.semana2.evidence import EvidenceStore
-from core.semana2.executor_h3 import PlaybookExecutor
-from core.semana2.executor_h3 import ScopeTypePatternRunner
-from core.semana2.mcp_backend import McpChromeBridge, McpScopeTypeBackend
-from core.semana2.orchestrator import Semana2Orchestrator
-from core.semana2.parser_mvp import RuleBasedTaskParser
-from core.semana2.validator import TaskIRValidator
+from core.creador_de_tareas.autofix_stub import NoOpAutoCorrector
+from core.creador_de_tareas.evidence import EvidenceStore
+from core.creador_de_tareas.executor_h3 import PlaybookExecutor
+from core.creador_de_tareas.executor_h3 import ScopeTypePatternRunner
+from core.creador_de_tareas.mcp_backend import McpChromeBridge, McpScopeTypeBackend
+from core.creador_de_tareas.orchestrator import Semana2Orchestrator
+from core.creador_de_tareas.parser_mvp import RuleBasedTaskParser
+from core.creador_de_tareas.validator import TaskIRValidator
+
+
+STORECHECK_HOME_URL = "https://webapp.storecheck.com/"
+STORECHECK_TARGET_CREATE_URL = "https://webapp.storecheck.com/moduleCapture/create"
 
 
 class _McpConnectionWorker(QObject):
@@ -126,6 +130,11 @@ class VistaCreadorTareas(QWidget):
         self._mcp_test_worker: _McpConnectionWorker | None = None
         self._mcp_real_thread: QThread | None = None
         self._mcp_real_worker: _RealMcpRunWorker | None = None
+        self._awaiting_continue = False
+        self._start_triggered_real_run = False
+        self._runtime_module_id: int | None = None
+        self._runtime_scope_original: int | None = None
+        self._runtime_scope_target: int | None = None
         self.setStyleSheet("VistaCreadorTareas { background-color: #FFFFFF; }")
 
         outer = QVBoxLayout(self)
@@ -176,8 +185,9 @@ class VistaCreadorTareas(QWidget):
 
         self._steps = QLabel(
             "1. Escribe lo que hará la tarea\n"
-            "2. Presiona \"Comenzar proceso\" para generar y validar\n"
-            "3. Revisa el preview JSON y guarda artefactos"
+            "2. Presiona \"Comenzar proceso\" para abrir Storecheck\n"
+            "3. Inicia sesión y navega a la tarea en creación\n"
+            "4. Presiona \"Continuar proceso\" para generar bloques y condiciones"
         )
         self._steps.setWordWrap(True)
         self._steps.setFont(QFont("Segoe UI", 11))
@@ -255,81 +265,20 @@ class VistaCreadorTareas(QWidget):
         self._btn_copy.setStyleSheet(self._btn_save.styleSheet())
         self._btn_copy.clicked.connect(self._copy_json)
 
+        self._btn_diag = QPushButton("Capturar diagnóstico UI")
+        self._btn_diag.setFixedSize(220, 42)
+        self._btn_diag.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self._btn_diag.setCursor(Qt.PointingHandCursor)
+        self._btn_diag.setEnabled(False)
+        self._btn_diag.setStyleSheet(self._btn_save.styleSheet())
+        self._btn_diag.clicked.connect(self._capture_publish_diagnostic)
+
         actions.addWidget(self._btn_save)
         actions.addWidget(self._btn_copy)
+        actions.addWidget(self._btn_diag)
         actions.addStretch()
         outer.addLayout(actions)
         outer.addSpacing(12)
-
-        real_title = QLabel("Corrida real MCP")
-        real_title.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        real_title.setStyleSheet("color: #0098C4;")
-        outer.addWidget(real_title)
-        outer.addSpacing(8)
-
-        real_row = QHBoxLayout()
-        real_row.setSpacing(8)
-
-        self._module_id = QLineEdit()
-        self._module_id.setPlaceholderText("module_id")
-        self._module_id.setFixedHeight(34)
-        self._module_id.setStyleSheet(
-            "QLineEdit { border: 1.2px solid #C9D1D6; border-radius: 8px; padding: 6px; }"
-        )
-
-        self._scope_original = QLineEdit()
-        self._scope_original.setPlaceholderText("scope original")
-        self._scope_original.setFixedHeight(34)
-        self._scope_original.setStyleSheet(
-            "QLineEdit { border: 1.2px solid #C9D1D6; border-radius: 8px; padding: 6px; }"
-        )
-
-        self._scope_target = QLineEdit()
-        self._scope_target.setPlaceholderText("scope objetivo")
-        self._scope_target.setFixedHeight(34)
-        self._scope_target.setStyleSheet(
-            "QLineEdit { border: 1.2px solid #C9D1D6; border-radius: 8px; padding: 6px; }"
-        )
-
-        self._btn_real = QPushButton("Ejecutar corrida real MCP")
-        self._btn_real.setFixedHeight(38)
-        self._btn_real.setCursor(Qt.PointingHandCursor)
-        self._btn_real.setStyleSheet("""
-            QPushButton {
-                background-color: #FFFFFF;
-                color: #006B88;
-                border: 1.8px solid #006B88;
-                border-radius: 19px;
-                padding: 0 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #E9F7FB; }
-        """)
-        self._btn_real.clicked.connect(self._run_real_mcp)
-
-        self._btn_test_mcp = QPushButton("Probar conexión MCP")
-        self._btn_test_mcp.setFixedHeight(38)
-        self._btn_test_mcp.setCursor(Qt.PointingHandCursor)
-        self._btn_test_mcp.setStyleSheet("""
-            QPushButton {
-                background-color: #FFFFFF;
-                color: #1565C0;
-                border: 1.8px solid #1565C0;
-                border-radius: 19px;
-                padding: 0 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #EAF2FF; }
-        """)
-        self._btn_test_mcp.clicked.connect(self._test_mcp_connection)
-
-        real_row.addWidget(self._module_id, 2)
-        real_row.addWidget(self._scope_original, 1)
-        real_row.addWidget(self._scope_target, 1)
-        real_row.addWidget(self._btn_test_mcp, 2)
-        real_row.addWidget(self._btn_real, 2)
-        outer.addLayout(real_row)
-        outer.addSpacing(10)
 
         self._summary = QLabel("Esperando descripción…")
         self._summary.setWordWrap(True)
@@ -365,12 +314,112 @@ class VistaCreadorTareas(QWidget):
 
     def set_mcp_bridge(self, bridge: McpChromeBridge) -> None:
         self._mcp_bridge = bridge
+        self._btn_diag.setEnabled(True)
 
     def _start(self):
         prompt = self._input.toPlainText().strip()
         if not prompt:
             QMessageBox.warning(self, "Falta descripción", "Escribe la descripción de la tarea para continuar.")
             return
+
+        if self._mcp_bridge is None:
+            QMessageBox.warning(
+                self,
+                "Bridge MCP no configurado",
+                "No se encontró bridge MCP para navegación automática. Revisa config/mcp_bridge.local.json."
+            )
+            return
+
+        if self._mcp_real_thread is not None and self._mcp_real_thread.isRunning():
+            QMessageBox.information(
+                self,
+                "Proceso en curso",
+                "Ya hay una corrida real ejecutándose. Espera a que termine."
+            )
+            return
+
+        if not self._awaiting_continue:
+            current_context = self._read_runtime_context()
+            current_url = current_context.get("url", "") if isinstance(current_context, dict) else ""
+            current_module_id = current_context.get("moduleId") if isinstance(current_context, dict) else None
+
+            already_in_target = (
+                isinstance(current_url, str)
+                and current_url.startswith(STORECHECK_TARGET_CREATE_URL)
+                and current_module_id is not None
+            )
+
+            if already_in_target:
+                self._awaiting_continue = True
+            else:
+                try:
+                    self._mcp_bridge.evaluate_script(
+                        f"""() => {{
+    window.location.href = {json.dumps(STORECHECK_HOME_URL, ensure_ascii=False)};
+    return {{ redirectedTo: window.location.href }};
+}}"""
+                    )
+                except Exception as exc:
+                    QMessageBox.critical(
+                        self,
+                        "No se pudo abrir Storecheck",
+                        f"Error al abrir la URL objetivo: {exc}",
+                    )
+                    return
+
+                self._awaiting_continue = True
+                self._btn_start.setText("Continuar proceso")
+                self._status.setStyleSheet("color: #1565C0; font-size: 10pt;")
+                self._status.setText(
+                    "Dirígete a la sección donde se creará la tarea. "
+                    "URL esperada: https://webapp.storecheck.com/moduleCapture/create"
+                )
+                return
+
+        runtime_context = self._read_runtime_context()
+        current_url = runtime_context.get("url", "") if isinstance(runtime_context, dict) else ""
+        if not current_url.startswith(STORECHECK_TARGET_CREATE_URL):
+            QMessageBox.warning(
+                self,
+                "URL objetivo requerida",
+                "Antes de continuar, navega manualmente a:\n"
+                "https://webapp.storecheck.com/moduleCapture/create"
+            )
+            self._status.setStyleSheet("color: #C62828; font-size: 10pt;")
+            self._status.setText(
+                "URL actual no válida para ejecutar. "
+                "Debes estar en /moduleCapture/create."
+            )
+            return
+
+        detected_module_id = runtime_context.get("moduleId") if isinstance(runtime_context, dict) else None
+        detected_scope = runtime_context.get("moduleScopeTypeId") if isinstance(runtime_context, dict) else None
+
+        try:
+            self._runtime_module_id = int(detected_module_id) if detected_module_id is not None else None
+        except Exception:
+            self._runtime_module_id = None
+
+        try:
+            self._runtime_scope_original = int(detected_scope) if detected_scope is not None else None
+        except Exception:
+            self._runtime_scope_original = None
+
+        self._runtime_scope_target = self._runtime_scope_original
+
+        if self._runtime_module_id is None:
+            QMessageBox.warning(
+                self,
+                "Contexto incompleto",
+                "No se pudo detectar module_id desde la URL actual. Asegúrate de estar en una tarea existente dentro de /moduleCapture/create."
+            )
+            self._status.setStyleSheet("color: #C62828; font-size: 10pt;")
+            self._status.setText("No se detectó module_id en la pantalla actual.")
+            return
+
+        if self._runtime_scope_original is None:
+            self._runtime_scope_original = 0
+            self._runtime_scope_target = 0
 
         orchestrator = Semana2Orchestrator(
             parser=RuleBasedTaskParser(),
@@ -426,6 +475,12 @@ class VistaCreadorTareas(QWidget):
             "Se generó la configuración base.\n\n"
             + json.dumps(details, ensure_ascii=False, indent=2),
         )
+
+        self._start_triggered_real_run = True
+        self._btn_start.setEnabled(False)
+        self._status.setStyleSheet("color: #1565C0; font-size: 10pt;")
+        self._status.setText("Contexto validado. Ejecutando generación real MCP...")
+        self._run_real_mcp()
 
     def _save_result(self):
         if not self._last_payload:
@@ -492,15 +547,19 @@ class VistaCreadorTareas(QWidget):
             )
             return
 
-        try:
-            module_id = int(self._module_id.text().strip())
-            original_scope = int(self._scope_original.text().strip())
-            target_scope = int(self._scope_target.text().strip())
-        except ValueError:
-            QMessageBox.warning(self, "Campos inválidos", "module_id y scope deben ser numéricos.")
+        if self._runtime_module_id is None:
+            QMessageBox.warning(
+                self,
+                "Contexto faltante",
+                "Primero usa el flujo Comenzar/Continuar para detectar automáticamente la tarea destino."
+            )
             return
 
-        self._btn_real.setEnabled(False)
+        module_id = self._runtime_module_id
+        original_scope = self._runtime_scope_original if self._runtime_scope_original is not None else 0
+        target_scope = self._runtime_scope_target if self._runtime_scope_target is not None else original_scope
+
+        self._btn_start.setEnabled(False)
         self._status.setStyleSheet("color: #1565C0; font-size: 10pt;")
         self._status.setText("Ejecutando corrida real MCP...")
 
@@ -575,16 +634,38 @@ class VistaCreadorTareas(QWidget):
         steps = payload.get("execution_result", {}).get("steps", [])
         reqids = [str(step.get("reqid")) for step in steps if step.get("reqid") is not None]
         success = payload.get("execution_result", {}).get("success", False)
+        critical_actions = {"create_block", "update_block", "attach_condition", "save_task", "verify_task"}
+        missing_critical = [
+            step.get("action", "unknown")
+            for step in steps
+            if step.get("action") in critical_actions
+            and (step.get("reqid") is None or not bool(step.get("success")))
+        ]
 
         if success:
             self._status.setStyleSheet("color: #2E7D32; font-size: 10pt;")
             self._status.setText(
                 f"Corrida MCP real exitosa. reqids: {', '.join(reqids) if reqids else 'N/A'}"
             )
+            if self._mcp_bridge is not None:
+                try:
+                    self._mcp_bridge.evaluate_script(
+                        """() => {
+    setTimeout(() => {
+        try { window.location.reload(); } catch (_e) {}
+    }, 300);
+    return { reloading: true };
+}"""
+                    )
+                except Exception:
+                    pass
         else:
             self._status.setStyleSheet("color: #C62828; font-size: 10pt;")
+            missing_text = ", ".join(missing_critical) if missing_critical else "N/A"
             self._status.setText(
-                f"Corrida MCP real finalizada con incidencias. reqids: {', '.join(reqids) if reqids else 'N/A'}"
+                "Corrida MCP real finalizada con incidencias. "
+                f"reqids: {', '.join(reqids) if reqids else 'N/A'} | "
+                f"faltantes críticos: {missing_text}"
             )
 
         QMessageBox.information(
@@ -599,7 +680,13 @@ class VistaCreadorTareas(QWidget):
         QMessageBox.critical(self, "Error MCP", error_text)
 
     def _cleanup_real_mcp_thread(self):
-        self._btn_real.setEnabled(True)
+        self._btn_start.setEnabled(True)
+
+        if self._start_triggered_real_run:
+            self._awaiting_continue = False
+            self._start_triggered_real_run = False
+            self._btn_start.setEnabled(True)
+            self._btn_start.setText("Comenzar proceso")
 
         if self._mcp_real_worker is not None:
             self._mcp_real_worker.deleteLater()
@@ -629,7 +716,7 @@ class VistaCreadorTareas(QWidget):
         )
 
     def _cleanup_mcp_test_thread(self):
-        self._btn_test_mcp.setEnabled(True)
+        self._btn_start.setEnabled(True)
 
         if self._mcp_test_worker is not None:
             self._mcp_test_worker.deleteLater()
@@ -651,9 +738,377 @@ class VistaCreadorTareas(QWidget):
         self._status.setStyleSheet("color: #1565C0; font-size: 10pt;")
         self._status.setText("JSON copiado al portapapeles.")
 
+    def _capture_publish_diagnostic(self):
+        if self._mcp_bridge is None:
+            QMessageBox.warning(
+                self,
+                "Bridge MCP no configurado",
+                "No se encontró bridge MCP para capturar diagnóstico.",
+            )
+            return
+
+        try:
+            runtime_context = self._read_runtime_context()
+            page_diagnostic = self._mcp_bridge.evaluate_script(
+                """() => {
+    const title = String(document && document.title ? document.title : '');
+    const url = String(window.location && window.location.href ? window.location.href : '');
+    const bodyText = String(document && document.body ? document.body.innerText || '' : '');
+    const alertTexts = Array.from(document.querySelectorAll('.alert, .toast, .modal-body, [role=\"alert\"]'))
+        .map((node) => String(node.textContent || '').trim())
+        .filter(Boolean)
+        .slice(0, 20);
+
+    const lowered = bodyText.toLowerCase();
+    const keywordHits = [];
+    const keywords = ['grails', 'error', 'servidor', 'server', 'timeout', 'procesando'];
+    for (const keyword of keywords) {
+        if (lowered.includes(keyword)) {
+            keywordHits.push(keyword);
+        }
+    }
+
+    return {
+        title,
+        url,
+        alertTexts,
+        keywordHits,
+    };
+}"""
+            )
+            listings: list[object] = []
+            request_plans = [
+                {"resource_types": ["xhr", "fetch"], "include_preserved_requests": False},
+                {"resource_types": ["xhr", "fetch"], "include_preserved_requests": True},
+                {"resource_types": None, "include_preserved_requests": False},
+                {"resource_types": None, "include_preserved_requests": True},
+            ]
+
+            for plan in request_plans:
+                captured_any = False
+                for page_idx in (0, 1):
+                    try:
+                        listing = self._mcp_bridge.list_network_requests(
+                            resource_types=plan["resource_types"],
+                            page_size=250,
+                            include_preserved_requests=plan["include_preserved_requests"],
+                            page_idx=page_idx,
+                        )
+                        listings.append(listing)
+                        captured_any = True
+                    except Exception:
+                        continue
+                if captured_any:
+                    break
+
+            if not listings:
+                listings.append(
+                    self._mcp_bridge.list_network_requests(
+                        resource_types=["xhr", "fetch"],
+                        page_size=250,
+                        include_preserved_requests=False,
+                    )
+                )
+
+            reqid_set: set[int] = set()
+            parsed_listing_items: list[dict] = []
+            raw_listing_parts: list[str] = []
+            for listing in listings:
+                reqid_set.update(self._extract_reqids(listing))
+                parsed_listing_items.extend(self._extract_requests_from_listing(listing))
+                raw_listing_parts.append(listing if isinstance(listing, str) else json.dumps(listing, ensure_ascii=False))
+
+            reqids = sorted(reqid_set, reverse=True)
+            failed_requests: list[dict] = []
+            recent_requests: list[dict] = []
+
+            dedup_parsed: dict[tuple[int, str], dict] = {}
+            for item in sorted(parsed_listing_items, key=lambda x: int(x.get("reqid", 0)), reverse=True):
+                key = (int(item.get("reqid", 0)), str(item.get("endpoint", "")))
+                if key not in dedup_parsed:
+                    dedup_parsed[key] = item
+
+            for item in list(dedup_parsed.values())[:60]:
+                if len(recent_requests) < 20:
+                    recent_requests.append(item)
+                if int(item.get("status", 0)) >= 400:
+                    failed_requests.append(item)
+
+            for reqid in reqids[:80]:
+                request_details = self._safe_get_request_details(reqid)
+                status = self._extract_status(request_details)
+                endpoint = self._extract_endpoint(request_details)
+                method = self._extract_method(request_details)
+                item = {
+                    "reqid": reqid,
+                    "status": status,
+                    "endpoint": endpoint,
+                    "method": method,
+                }
+                if len(recent_requests) < 20 and not any(r.get("reqid") == reqid for r in recent_requests):
+                    recent_requests.append(item)
+
+                if status >= 400 and not any(r.get("reqid") == reqid for r in failed_requests):
+                    failed_requests.append(item)
+
+            severe_failed_requests = [
+                item for item in failed_requests
+                if int(item.get("status", 0)) >= 500
+            ]
+
+            for item in severe_failed_requests[:8]:
+                try:
+                    reqid_value = int(item.get("reqid", 0))
+                except (TypeError, ValueError):
+                    continue
+
+                details = self._safe_get_request_details(reqid_value)
+                if details:
+                    item["details_excerpt"] = self._summarize_request_details(details)
+
+            output_dir = self._default_runs_dir()
+            slug = datetime.now().strftime("%Y%m%d_%H%M%S")
+            diagnostic_path = os.path.join(output_dir, f"{slug}_ui_publish_diagnostic.json")
+
+            payload = {
+                "captured_at": datetime.now().isoformat(),
+                "runtime_context": runtime_context,
+                "page": page_diagnostic if isinstance(page_diagnostic, dict) else {"raw": page_diagnostic},
+                "analysis": {
+                    "has_validation_alert": (
+                        isinstance(page_diagnostic, dict)
+                        and any(
+                            "campos por validar" in str(text).lower()
+                            for text in page_diagnostic.get("alertTexts", [])
+                        )
+                    ),
+                    "has_server_error_text": (
+                        isinstance(page_diagnostic, dict)
+                        and any(
+                            "an error has occurred" in str(text).lower()
+                            for text in page_diagnostic.get("alertTexts", [])
+                        )
+                    ),
+                },
+                "network": {
+                    "failed_requests": failed_requests,
+                    "severe_failed_requests": severe_failed_requests,
+                    "recent_requests": recent_requests,
+                    "reqids_count": len(reqids),
+                    "parsed_listing_count": len(dedup_parsed),
+                    "listings_count": len(listings),
+                    "raw_listing": "\n\n--- PAGE BREAK ---\n\n".join(raw_listing_parts),
+                },
+                "last_artifacts": self._last_artifacts or {},
+            }
+
+            with open(diagnostic_path, "w", encoding="utf-8") as fp:
+                json.dump(payload, fp, ensure_ascii=False, indent=2)
+
+            self._status.setStyleSheet("color: #2E7D32; font-size: 10pt;")
+            self._status.setText(
+                "Diagnóstico UI guardado en docs/runs. "
+                f"Errores de red detectados: {len(failed_requests)}"
+            )
+            QMessageBox.information(
+                self,
+                "Diagnóstico capturado",
+                "Se guardó el diagnóstico UI en:\n\n"
+                f"{os.path.abspath(diagnostic_path)}\n\n"
+                f"Errores de red detectados: {len(failed_requests)}",
+            )
+        except Exception as exc:
+            self._status.setStyleSheet("color: #C62828; font-size: 10pt;")
+            self._status.setText(f"No se pudo capturar diagnóstico UI: {exc}")
+            QMessageBox.critical(self, "Error al capturar diagnóstico", str(exc))
+
+    def _safe_get_request_details(self, reqid: int) -> object:
+        if self._mcp_bridge is None:
+            return {}
+        try:
+            return self._mcp_bridge.get_network_request(reqid)
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _extract_reqids(payload: object) -> set[int]:
+        reqids: set[int] = set()
+
+        if isinstance(payload, dict):
+            for key in ("requests", "items", "data"):
+                value = payload.get(key)
+                if isinstance(value, list):
+                    reqids.update(VistaCreadorTareas._extract_reqids(value))
+
+            direct = payload.get("reqid")
+            if isinstance(direct, int):
+                reqids.add(direct)
+
+        if isinstance(payload, list):
+            for item in payload:
+                reqids.update(VistaCreadorTareas._extract_reqids(item))
+
+        if isinstance(payload, str):
+            for match in re.findall(r"reqid\s*=\s*(\d+)", payload):
+                reqids.add(int(match))
+
+        return reqids
+
+    @staticmethod
+    def _extract_endpoint(request_details: object) -> str:
+        if isinstance(request_details, dict):
+            for key in ("url", "requestUrl", "endpoint", "path"):
+                value = request_details.get(key)
+                if isinstance(value, str):
+                    return value
+
+            request_obj = request_details.get("request")
+            if isinstance(request_obj, dict):
+                value = request_obj.get("url")
+                if isinstance(value, str):
+                    return value
+
+        if isinstance(request_details, str):
+            match = re.search(r"https?://\S+", request_details)
+            if match:
+                return match.group(0)
+
+        return ""
+
+    @staticmethod
+    def _extract_status(request_details: object) -> int:
+        if isinstance(request_details, dict):
+            for key in ("status", "status_code", "http_status"):
+                value = request_details.get(key)
+                if isinstance(value, int):
+                    return value
+
+            response_obj = request_details.get("response")
+            if isinstance(response_obj, dict):
+                value = response_obj.get("status")
+                if isinstance(value, int):
+                    return value
+
+        if isinstance(request_details, str):
+            match = re.search(r"\[(\d{3})\]", request_details)
+            if match:
+                return int(match.group(1))
+
+            match = re.search(r"\b(\d{3})\b", request_details)
+            if match:
+                return int(match.group(1))
+
+        return 0
+
+    @staticmethod
+    def _extract_method(request_details: object) -> str:
+        if isinstance(request_details, dict):
+            direct_method = request_details.get("method")
+            if isinstance(direct_method, str) and direct_method:
+                return direct_method.upper()
+
+            request_obj = request_details.get("request")
+            if isinstance(request_obj, dict):
+                nested_method = request_obj.get("method")
+                if isinstance(nested_method, str) and nested_method:
+                    return nested_method.upper()
+
+        if isinstance(request_details, str):
+            match = re.search(r"\b(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\b", request_details)
+            if match:
+                return match.group(1)
+
+        return ""
+
+    @staticmethod
+    def _extract_request_body_excerpt(request_details: object) -> str | None:
+        if isinstance(request_details, dict):
+            for key in ("requestBody", "request_body", "postData"):
+                value = request_details.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value[:1500]
+
+            request_obj = request_details.get("request")
+            if isinstance(request_obj, dict):
+                for key in ("postData", "body", "requestBody"):
+                    value = request_obj.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value[:1500]
+
+        if isinstance(request_details, str):
+            match = re.search(r"Request Body\n([\s\S]*?)(?:\n(?:Response Body|Headers)\n|$)", request_details)
+            if match:
+                return match.group(1).strip()[:1500]
+
+        return None
+
+    @staticmethod
+    def _extract_response_body_excerpt(request_details: object) -> str | None:
+        if isinstance(request_details, dict):
+            for key in ("responseBody", "response_body", "body", "body_preview"):
+                value = request_details.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value[:1500]
+
+            response_obj = request_details.get("response")
+            if isinstance(response_obj, dict):
+                for key in ("body", "responseBody", "text"):
+                    value = response_obj.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value[:1500]
+
+        if isinstance(request_details, str):
+            match = re.search(r"Response Body\n([\s\S]*?)(?:\nHeaders\n|$)", request_details)
+            if match:
+                return match.group(1).strip()[:1500]
+
+        return None
+
+    @staticmethod
+    def _summarize_request_details(request_details: object) -> dict:
+        summary: dict[str, object] = {
+            "status": VistaCreadorTareas._extract_status(request_details),
+            "endpoint": VistaCreadorTareas._extract_endpoint(request_details),
+            "method": VistaCreadorTareas._extract_method(request_details),
+            "request_body_excerpt": VistaCreadorTareas._extract_request_body_excerpt(request_details),
+            "response_body_excerpt": VistaCreadorTareas._extract_response_body_excerpt(request_details),
+        }
+
+        if isinstance(request_details, dict):
+            request_obj = request_details.get("request")
+            response_obj = request_details.get("response")
+            if isinstance(request_obj, dict):
+                headers = request_obj.get("headers")
+                if isinstance(headers, dict):
+                    summary["request_headers"] = headers
+            if isinstance(response_obj, dict):
+                headers = response_obj.get("headers")
+                if isinstance(headers, dict):
+                    summary["response_headers"] = headers
+
+        return summary
+
+    @staticmethod
+    def _extract_requests_from_listing(payload: object) -> list[dict]:
+        text = payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False)
+        items: list[dict] = []
+        pattern = re.compile(
+            r"reqid\s*=\s*(\d+)\s+([A-Z]+)\s+(https?://\S+)\s+\[(\d{3})\]"
+        )
+        for match in pattern.finditer(text):
+            items.append(
+                {
+                    "reqid": int(match.group(1)),
+                    "method": match.group(2),
+                    "endpoint": match.group(3),
+                    "status": int(match.group(4)),
+                }
+            )
+        return items
+
     @staticmethod
     def _build_execution_result(execution_data: dict):
-        from core.semana2.contracts import ExecutionResult, ExecutionStepEvidence
+        from core.creador_de_tareas.contracts import ExecutionResult, ExecutionStepEvidence
 
         steps = []
         for raw in execution_data.get("steps", []):
@@ -661,10 +1116,13 @@ class VistaCreadorTareas(QWidget):
                 ExecutionStepEvidence(
                     action=raw.get("action", "unknown"),
                     endpoint=raw.get("endpoint"),
+                    http_status=raw.get("http_status"),
                     request_payload_excerpt=raw.get("request_payload_excerpt"),
                     response_excerpt=raw.get("response_excerpt"),
+                    response_json=raw.get("response_json"),
                     reqid=raw.get("reqid"),
                     success=bool(raw.get("success", False)),
+                    operational_success_reason=raw.get("operational_success_reason"),
                     notes=raw.get("notes", ""),
                 )
             )
@@ -682,3 +1140,36 @@ class VistaCreadorTareas(QWidget):
         runs_dir = os.path.join(root, "docs", "runs")
         os.makedirs(runs_dir, exist_ok=True)
         return runs_dir
+
+    def _read_runtime_context(self) -> dict:
+        if self._mcp_bridge is None:
+            return {}
+
+        script = """() => {
+    const module = window.module || {};
+    const capture = module.moduleCapture || {};
+    return {
+        url: String(window.location && window.location.href ? window.location.href : ''),
+        title: String(document && document.title ? document.title : ''),
+        moduleId: capture.id ?? null,
+        moduleScopeTypeId: capture.moduleScopeTypeId ?? null,
+    };
+}"""
+
+        try:
+            payload = self._mcp_bridge.evaluate_script(script)
+        except Exception:
+            return {}
+
+        if isinstance(payload, dict):
+            return payload
+
+        if isinstance(payload, str):
+            try:
+                parsed = json.loads(payload)
+                if isinstance(parsed, dict):
+                    return parsed
+            except Exception:
+                return {"url": payload}
+
+        return {}

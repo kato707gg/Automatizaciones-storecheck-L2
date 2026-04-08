@@ -1,0 +1,142 @@
+{
+  "diagnostics": [
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:16.773Z",
+      "msg": "editor.getString currentJson",
+      "length": 860,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:16.773Z",
+      "msg": "editor.getString currentJson",
+      "length": 860,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:16.773Z",
+      "msg": "editor.getString currentJson",
+      "length": 860,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:16.773Z",
+      "msg": "editor.getString currentJson",
+      "length": 860,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:22.306Z",
+      "msg": "editor.getString currentJson",
+      "length": 1509,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:16.773Z",
+      "msg": "editor.getString currentJson",
+      "length": 860,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:22.306Z",
+      "msg": "editor.getString currentJson",
+      "length": 1509,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:16.773Z",
+      "msg": "editor.getString currentJson",
+      "length": 860,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:22.306Z",
+      "msg": "editor.getString currentJson",
+      "length": 1509,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:16.773Z",
+      "msg": "editor.getString currentJson",
+      "length": 860,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:22.306Z",
+      "msg": "editor.getString currentJson",
+      "length": 1509,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:14.047Z",
+      "msg": "editor.getString currentJson",
+      "length": 522,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"elementtmp-b1-1774499894042\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":false,\"attachmentD"
+    },
+    {
+      "ts": "2026-03-26T04:38:16.773Z",
+      "msg": "editor.getString currentJson",
+      "length": 860,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    },
+    {
+      "ts": "2026-03-26T04:38:22.306Z",
+      "msg": "editor.getString currentJson",
+      "length": 1509,
+      "sample": "[{\"captureDataType\":\"6\",\"id\":\"element2082643\",\"availableNA\":true,\"mandatory\":true,\"active\":true,\"name\":\"¿Existe producto en anaquel?\",\"allowedPhotos\":false,\"mandatoryPhotos\":false,\"multiplePhotos\":fal"
+    }
+  ]
+}

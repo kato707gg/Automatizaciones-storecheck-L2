@@ -1,0 +1,258 @@
+{
+  "parse_result": {
+    "ir": {
+      "task_name": "Tarea generada desde lenguaje natural",
+      "blocks": [
+        {
+          "block_id": "b1",
+          "capture_data_type": "6",
+          "label": "¿Existe producto en anaquel?",
+          "mandatory": true,
+          "available_na": true,
+          "allowed_photos": false,
+          "mandatory_photos": false,
+          "multiple_photos": false,
+          "options": [],
+          "metadata": {}
+        },
+        {
+          "block_id": "b2",
+          "capture_data_type": "12",
+          "label": "Foto rama Sí",
+          "mandatory": true,
+          "available_na": true,
+          "allowed_photos": true,
+          "mandatory_photos": true,
+          "multiple_photos": false,
+          "options": [],
+          "metadata": {}
+        },
+        {
+          "block_id": "b3",
+          "capture_data_type": "11",
+          "label": "Texto rama No",
+          "mandatory": true,
+          "available_na": true,
+          "allowed_photos": false,
+          "mandatory_photos": false,
+          "multiple_photos": false,
+          "options": [],
+          "metadata": {}
+        }
+      ],
+      "edges": [
+        {
+          "parent_block_id": "b1",
+          "child_block_id": "b2",
+          "condition_type": "stage",
+          "condition_value": "1"
+        },
+        {
+          "parent_block_id": "b1",
+          "child_block_id": "b3",
+          "condition_type": "stage",
+          "condition_value": "0"
+        }
+      ],
+      "assumptions": []
+    },
+    "warnings": []
+  },
+  "validation_result": {
+    "valid": true,
+    "issues": [],
+    "normalized_ir": {
+      "task_name": "Tarea generada desde lenguaje natural",
+      "blocks": [
+        {
+          "block_id": "b1",
+          "capture_data_type": "6",
+          "label": "¿Existe producto en anaquel?",
+          "mandatory": true,
+          "available_na": true,
+          "allowed_photos": false,
+          "mandatory_photos": false,
+          "multiple_photos": false,
+          "options": [],
+          "metadata": {}
+        },
+        {
+          "block_id": "b2",
+          "capture_data_type": "12",
+          "label": "Foto rama Sí",
+          "mandatory": true,
+          "available_na": true,
+          "allowed_photos": true,
+          "mandatory_photos": true,
+          "multiple_photos": false,
+          "options": [],
+          "metadata": {}
+        },
+        {
+          "block_id": "b3",
+          "capture_data_type": "11",
+          "label": "Texto rama No",
+          "mandatory": true,
+          "available_na": true,
+          "allowed_photos": false,
+          "mandatory_photos": false,
+          "multiple_photos": false,
+          "options": [],
+          "metadata": {}
+        }
+      ],
+      "edges": [
+        {
+          "parent_block_id": "b1",
+          "child_block_id": "b2",
+          "condition_type": "stage",
+          "condition_value": "1"
+        },
+        {
+          "parent_block_id": "b1",
+          "child_block_id": "b3",
+          "condition_type": "stage",
+          "condition_value": "0"
+        }
+      ],
+      "assumptions": []
+    }
+  },
+  "execution_result": {
+    "executed": true,
+    "success": true,
+    "steps": [
+      {
+        "action": "open_task_editor",
+        "endpoint": null,
+        "http_status": null,
+        "request_payload_excerpt": "{'url': 'https://webapp.storecheck.com/moduleCapture/create'}",
+        "response_excerpt": null,
+        "reqid": null,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "Step S01 delegado al runner (sin tráfico de red requerido)."
+      },
+      {
+        "action": "create_block",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 200,
+        "request_payload_excerpt": "type=newElement&operation=create_block&moduleId=448672&blockId=b1&captureDataType=6&label=¿Existe producto en anaquel?",
+        "response_excerpt": "{\"elementId\":2078073,\"elementJson\":null}",
+        "reqid": 590,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "pre_cleanup_removed=1; create_block block_id=b1 captureDataType=6 mappedElementId=2078073 (HTTP 200)"
+      },
+      {
+        "action": "update_block",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 200,
+        "request_payload_excerpt": "type=element&operation=update_block&moduleId=448672&blockId=b1&blockElementId=2078073&mandatory=True&availableNA=True&optionsCount=0",
+        "response_excerpt": "[]",
+        "reqid": 591,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "update_block block_id=b1 mandatory=True availableNA=True (HTTP 200)"
+      },
+      {
+        "action": "create_block",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 200,
+        "request_payload_excerpt": "type=newElement&operation=create_block&moduleId=448672&blockId=b2&captureDataType=12&label=Foto rama Sí",
+        "response_excerpt": "{\"elementId\":2078074,\"elementJson\":null}",
+        "reqid": 593,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "pre_cleanup_cached; create_block block_id=b2 captureDataType=12 mappedElementId=2078074 (HTTP 200)"
+      },
+      {
+        "action": "update_block",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 200,
+        "request_payload_excerpt": "type=element&operation=update_block&moduleId=448672&blockId=b2&blockElementId=2078074&mandatory=True&availableNA=True&optionsCount=0",
+        "response_excerpt": "[]",
+        "reqid": 594,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "update_block block_id=b2 mandatory=True availableNA=True (HTTP 200)"
+      },
+      {
+        "action": "create_block",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 200,
+        "request_payload_excerpt": "type=newElement&operation=create_block&moduleId=448672&blockId=b3&captureDataType=11&label=Texto rama No",
+        "response_excerpt": "{\"elementId\":2078075,\"elementJson\":null}",
+        "reqid": 596,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "pre_cleanup_cached; create_block block_id=b3 captureDataType=11 mappedElementId=2078075 (HTTP 200)"
+      },
+      {
+        "action": "update_block",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 200,
+        "request_payload_excerpt": "type=element&operation=update_block&moduleId=448672&blockId=b3&blockElementId=2078075&mandatory=True&availableNA=True&optionsCount=0",
+        "response_excerpt": "[]",
+        "reqid": 597,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "update_block block_id=b3 mandatory=True availableNA=True (HTTP 200)"
+      },
+      {
+        "action": "attach_condition",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 0,
+        "request_payload_excerpt": "type=element&operation=attach_condition&moduleId=448672&parentBlockId=b1&childBlockId=b2&conditionType=stage&conditionValue=1&parentElementId=2078073&childElementId=2078074",
+        "response_excerpt": "parent_or_child_not_found",
+        "reqid": null,
+        "success": false,
+        "operational_success_reason": null,
+        "notes": "attach_condition b1->b2 type=stage value=1 parentElementId=2078073 childElementId=2078074 observedType=None observedValue=None (HTTP 0) retry_observedType=None retry_observedValue=None retry_http=0"
+      },
+      {
+        "action": "attach_condition",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 0,
+        "request_payload_excerpt": "type=element&operation=attach_condition&moduleId=448672&parentBlockId=b1&childBlockId=b3&conditionType=stage&conditionValue=0&parentElementId=2078073&childElementId=2078075",
+        "response_excerpt": "parent_or_child_not_found",
+        "reqid": null,
+        "success": false,
+        "operational_success_reason": null,
+        "notes": "attach_condition b1->b3 type=stage value=0 parentElementId=2078073 childElementId=2078075 observedType=None observedValue=None (HTTP 0) retry_observedType=None retry_observedValue=None retry_http=0"
+      },
+      {
+        "action": "save_task",
+        "endpoint": "/moduleCapture/update",
+        "http_status": 200,
+        "request_payload_excerpt": "type=moduleScopeType&moduleId=448672&moduleScopeTypeId=0",
+        "response_excerpt": "[]",
+        "reqid": 605,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "scopeType -> 0 (HTTP 200)"
+      },
+      {
+        "action": "verify_task",
+        "endpoint": "/moduleCapture/syncTaskData?type=moduleDefinition&moduleId=448672",
+        "http_status": 200,
+        "request_payload_excerpt": "type=moduleDefinition,moduleId=448672",
+        "response_excerpt": "{\"moduleCapture\":{\"id\":448672,\"moduleDsc\":\"prueba automa\",\"draftMode\":false,\"elements\":{\"elements\":[{\"hasPrecapture\":false,\"captureDataType\":\"6\",\"jsonHubPrecapture\":\"\",\"multiplePhotos\":false,\"countProductLvl\":\"\",\"mandatory\":true,\"precaptureTypeDsc\":\"\",\"children\":[{\"elementId\":\"2078074\",\"productOption\":null,\"orderElement\":\"2\",\"hasAssociatedProduct\":false,\"captureDataType\":\"12\",\"multiplePhotos\":fals",
+        "reqid": 606,
+        "success": true,
+        "operational_success_reason": null,
+        "notes": "observed scopeType=0, expected=0; restore_scopeType=0 restore_reqid=607 restore_http=200"
+      }
+    ],
+    "final_snapshot": {
+      "task_name": "Tarea generada desde lenguaje natural",
+      "planned_steps": 11,
+      "create_update_network_evidence_complete": true,
+      "network_evidence_complete": true
+    }
+  },
+  "retries": 0,
+  "notes": [
+    "Flujo completado correctamente."
+  ]
+}
