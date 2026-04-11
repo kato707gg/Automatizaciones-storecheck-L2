@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QProgressBar,
     QAbstractItemView,
     QStackedWidget,
     QTableWidget,
@@ -29,6 +28,12 @@ from core.selector_de_formatos.selector_formato import (
     WebSelectionSession,
     load_items_from_excel,
     parse_items_from_text,
+)
+from ui.components.action_buttons import (
+    create_back_button,
+    create_primary_action_button,
+    create_process_progress_bar,
+    create_status_action_button,
 )
 from ui.components.drop_zone import DropZone
 
@@ -77,22 +82,7 @@ class VistaSelectorFormato(QWidget):
         outer.setContentsMargins(40, 30, 40, 30)
         outer.setSpacing(0)
 
-        self._btn_back = QPushButton("← Volver")
-        self._btn_back.setFixedSize(120, 36)
-        self._btn_back.setFont(QFont("Segoe UI", 10))
-        self._btn_back.setCursor(Qt.PointingHandCursor)
-        self._btn_back.setStyleSheet(
-            """
-            QPushButton {
-                background-color: transparent;
-                color: #0098C4;
-                border: 1.5px solid #0098C4;
-                border-radius: 18px;
-            }
-            QPushButton:hover { background-color: #E8F7FC; }
-            """
-        )
-        self._btn_back.clicked.connect(self._on_back)
+        self._btn_back = create_back_button(on_click=self._on_back)
         outer.addWidget(self._btn_back, 0, Qt.AlignLeft)
         outer.addSpacing(20)
 
@@ -295,23 +285,13 @@ class VistaSelectorFormato(QWidget):
         idle_layout.setContentsMargins(0, 0, 0, 0)
         idle_layout.setAlignment(Qt.AlignCenter)
 
-        self._btn_start = QPushButton("Iniciar sesion")
-        self._btn_start.setFixedSize(300, 52)
-        self._btn_start.setFont(QFont("Segoe UI", 13, QFont.Bold))
-        self._btn_start.setCursor(Qt.PointingHandCursor)
-        self._btn_start.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #0098C4;
-                color: #FFFFFF;
-                border: none;
-                border-radius: 26px;
-            }
-            QPushButton:hover   { background-color: #007BA3; }
-            QPushButton:pressed { background-color: #006080; }
-            """
+        self._btn_start = create_primary_action_button(
+            "Iniciar sesion",
+            on_click=self._start_or_continue,
+            size=(300, 52),
+            font_size=13,
+            border_radius=26,
         )
-        self._btn_start.clicked.connect(self._start_or_continue)
         idle_layout.addWidget(self._btn_start)
         self._state.addWidget(w_idle)
 
@@ -321,16 +301,11 @@ class VistaSelectorFormato(QWidget):
         run_layout.setAlignment(Qt.AlignCenter)
         run_layout.setSpacing(10)
 
-        self._pbar = QProgressBar()
-        self._pbar.setRange(0, 100)
-        self._pbar.setValue(0)
-        self._pbar.setTextVisible(False)
-        self._pbar.setFixedSize(360, 11)
-        self._pbar.setStyleSheet(
-            """
-            QProgressBar { border: none; border-radius: 5px; background-color: #E0E0E0; }
-            QProgressBar::chunk { background-color: #0098C4; border-radius: 5px; }
-            """
+        self._pbar = create_process_progress_bar(
+            size=(360, 11),
+            indeterminate=False,
+            maximum=100,
+            value=0,
         )
 
         self._lbl_running = QLabel("Ejecutando proceso...")
@@ -352,17 +327,14 @@ class VistaSelectorFormato(QWidget):
         self._lbl_error.setWordWrap(True)
         self._lbl_error.setStyleSheet("color: #C62828;")
 
-        btn_retry = QPushButton("↺ Volver a intentar")
-        btn_retry.setFixedSize(210, 40)
-        btn_retry.setCursor(Qt.PointingHandCursor)
-        btn_retry.setStyleSheet(
-            """
-            QPushButton { background-color: #FFEBEE; color: #C62828;
-                border: 1.5px solid #C62828; border-radius: 20px; }
-            QPushButton:hover { background-color: #FFCDD2; }
-            """
+        btn_retry = create_status_action_button(
+            "↺ Volver a intentar",
+            on_click=self._reset_state,
+            tone="error",
+            size=(210, 40),
+            font_size=10,
+            border_radius=20,
         )
-        btn_retry.clicked.connect(self._reset_state)
 
         err_layout.addWidget(self._lbl_error)
         err_layout.addWidget(btn_retry, 0, Qt.AlignHCenter)
@@ -379,17 +351,14 @@ class VistaSelectorFormato(QWidget):
         self._lbl_ok.setWordWrap(True)
         self._lbl_ok.setStyleSheet("color: #2E7D32;")
 
-        btn_new = QPushButton("↺ Nueva corrida")
-        btn_new.setFixedSize(200, 40)
-        btn_new.setCursor(Qt.PointingHandCursor)
-        btn_new.setStyleSheet(
-            """
-            QPushButton { background-color: #E8F5E9; color: #2E7D32;
-                border: 1.5px solid #2E7D32; border-radius: 20px; }
-            QPushButton:hover { background-color: #C8E6C9; }
-            """
+        btn_new = create_status_action_button(
+            "↺ Nueva corrida",
+            on_click=self._reset_state,
+            tone="success",
+            size=(200, 40),
+            font_size=10,
+            border_radius=20,
         )
-        btn_new.clicked.connect(self._reset_state)
 
         done_layout.addWidget(self._lbl_ok)
         done_layout.addWidget(btn_new, 0, Qt.AlignHCenter)

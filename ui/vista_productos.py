@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from ui.components.action_buttons import create_back_button, create_primary_action_button
 
 # Palabras clave para detectar cada grupo por su encabezado (fila 1 del Excel)
 KWORD_NORMAL = "captura normal"
@@ -168,21 +169,7 @@ class VistaProductos(QWidget):
         outer.setSpacing(0)
 
         # ── Botón volver ─────────────────────────────────────────────
-        btn_back = QPushButton("← Volver")
-        btn_back.setFixedSize(120, 36)
-        btn_back.setFont(QFont("Segoe UI", 10))
-        btn_back.setCursor(Qt.PointingHandCursor)
-        btn_back.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                color: #0098C4;
-                border: 1.5px solid #0098C4;
-                border-radius: 18px;
-            }
-            QPushButton:hover { background-color: #E8F7FC; }
-        """)
-        if back_cb:
-            btn_back.clicked.connect(back_cb)
+        btn_back = create_back_button(on_click=back_cb)
         outer.addWidget(btn_back, 0, Qt.AlignLeft)
         outer.addSpacing(24)
 
@@ -193,22 +180,11 @@ class VistaProductos(QWidget):
         outer.addSpacing(24)
 
         # ── Botón guardar ────────────────────────────────────────────
-        self._btn_guardar = QPushButton("Guardar cambios")
-        self._btn_guardar.setFixedSize(240, 50)
-        self._btn_guardar.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        self._btn_guardar.setCursor(Qt.PointingHandCursor)
-        self._btn_guardar.setStyleSheet("""
-            QPushButton {
-                background-color: #0098C4;
-                color: #FFFFFF;
-                border: none;
-                border-radius: 25px;
-            }
-            QPushButton:hover   { background-color: #007BA3; }
-            QPushButton:pressed { background-color: #006080; }
-            QPushButton:disabled { background-color: #CCCCCC; }
-        """)
-        self._btn_guardar.clicked.connect(self._guardar)
+        self._btn_guardar = create_primary_action_button(
+            "Guardar cambios",
+            on_click=self._guardar,
+            disabled_bg="#CCCCCC",
+        )
         outer.addWidget(self._btn_guardar, 0, Qt.AlignHCenter)
 
         self._cargar_datos()

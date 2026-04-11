@@ -19,6 +19,8 @@ El resultado se guarda en carpeta_salida con el nombre del layout_places origina
 
 import os
 import shutil
+import unicodedata
+from difflib import SequenceMatcher
 import openpyxl
 
 
@@ -26,9 +28,24 @@ import openpyxl
 # Las columnas marcadas como opcionales no son obligatorias; se usan si están presentes.
 _COLS_CLIENTE = [
     "BRANCHID",
+    "CODIGO INTERNO",     # opcional: alternativa a BRANCHID
+    "Código Interno",     # opcional: alternativa a BRANCHID
     "NOMBRE DE LA TIENDA",
     "Nombre Lugar",        # opcional: alternativa a NOMBRE DE LA TIENDA
     "ESTADO",
+    "CANAL",               # opcional
+    "CANAL 1",             # opcional: alternativa a CANAL
+    "SUBCANAL",            # opcional
+    "Canal II",            # opcional: alternativa a SUBCANAL
+    "CADENA",              # opcional
+    "Cadena",              # opcional: alternativa a CADENA
+    "FORMATO CLIENTE",     # opcional
+    "Formato",             # opcional: alternativa a FORMATO CLIENTE
+    "FORMATO",             # opcional
+    "AREA NIELSEN",        # opcional
+    "Area Nielsen",        # opcional: alternativa a AREA NIELSEN
+    "DETERMINANTE",        # opcional
+    "CLIENTE SELL-IN (SAP)",  # opcional
     "LATITUD",
     "LONGITUD",
     "STATUS OPERACIONES",  # opcional: fuente para columna Activo
@@ -45,8 +62,15 @@ _COLS_SISTEMA = [
     "Código Interno",
     "Nombre Lugar",
     "Cadena",
+    "Canal",
+    "Formato",
+    "Area Nielsen",
     "tags_ESTADO",
     "tags_region_precios",
+    "tags_CANAL 1",
+    "tags_CLIENTE SELL-IN (SAP)",
+    "tags_DETERMINANTE",
+    "tags_FORMATO",
     "Latitud",
     "Longitud",
     "Activo",
@@ -59,12 +83,24 @@ _COLS_SISTEMA = [
 # el nombre canónico se construye como: Código Interno + Cadena (catálogo) + Nombre Tienda.
 _MAPEO = {
     "ESTADO":  ["tags_ESTADO", "tags_region_precios"],
+    "CANAL": "tags_CANAL 1",
+    "CLIENTE SELL-IN (SAP)": "tags_CLIENTE SELL-IN (SAP)",
     "LATITUD": "Latitud",
     "LONGITUD": "Longitud",
 }
 
+# ── Mapeo extra SOLO para filas nuevas (ADD) ────────────────────────
+_MAPEO_ADD = (
+    (("AREA NIELSEN",), "Area Nielsen"),
+    (("SUBCANAL",), "Canal"),
+    (("CADENA",), "Cadena"),
+    (("FORMATO CLIENTE", "FORMATO"), "Formato"),
+    (("DETERMINANTE",), "tags_DETERMINANTE"),
+    (("FORMATO",), "tags_FORMATO"),
+)
+
 # ── Nombres de hoja esperados ────────────────────────────────────────
-_HOJA_CLIENTE = "BD"
+_HOJAS_CLIENTE = ("BD", "CATALOGO DE LUGARES")
 _HOJA_SISTEMA = "Lugares"
 
 # ── Límite de registros por archivo de salida ────────────────────────
@@ -111,6 +147,55 @@ def _mapear_indices(ws, fila_enc: int, nombres: set) -> dict[str, int]:
         if nombre in nombres:
             mapa[nombre] = col_idx
     return mapa
+
+
+def _normalizar_encabezado(nombre: str) -> str:
+    """
+    Normaliza encabezados para comparación flexible:
+    - elimina acentos
+    - colapsa espacios
+    - compara en mayúsculas
+    """
+    s = unicodedata.normalize("NFKD", str(nombre))
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = " ".join(s.strip().split())
+    return s.upper()
+
+
+def _mapear_indices_alias(ws, fila_enc: int, alias_por_canonico: dict[str, tuple[str, ...]]) -> dict[str, int]:
+    """
+    Devuelve {nombre_canonico: col_idx_1based} permitiendo alias y variantes
+    de mayúsculas/minúsculas, acentos y espacios.
+    """
+    fila = list(ws.iter_rows(
+        min_row=fila_enc, max_row=fila_enc, values_only=True))[0]
+    alias_norm = {
+        _normalizar_encabezado(alias): canonico
+        for canonico, aliases in alias_por_canonico.items()
+        for alias in aliases
+    }
+    mapa = {}
+    for col_idx, v in enumerate(fila, start=1):
+        if v is None:
+            continue
+        nombre_norm = _normalizar_encabezado(v)
+        canonico = alias_norm.get(nombre_norm)
+        if canonico:
+            mapa[canonico] = col_idx
+    return mapa
+
+
+def _normalizar_nombre_hoja(nombre: str) -> str:
+    """
+    Normaliza nombres de hoja para comparación flexible:
+    - elimina acentos
+    - colapsa espacios múltiples
+    - compara en mayúsculas
+    """
+    s = unicodedata.normalize("NFKD", str(nombre))
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = " ".join(s.strip().split())
+    return s.upper()
 
 
 def _normalizar_palabra(palabra: str) -> str:
@@ -258,6 +343,186 @@ def _normalizar(valor) -> str:
     return s
 
 
+def _normalizar_texto_catalogo(valor) -> str:
+    """Normaliza textos de negocio para comparar catálogos (canal/cadena/formato)."""
+    s = _normalizar_encabezado(_normalizar(valor))
+    for ch in ("/", "-", "_", ",", ".", ";", ":", "(", ")"):
+        s = s.replace(ch, " ")
+    return " ".join(s.split())
+
+
+def _similaridad_texto(a: str, b: str) -> float:
+    """Devuelve similitud entre 0 y 1 entre dos textos normalizados."""
+    if not a or not b:
+        return 0.0
+    return SequenceMatcher(None, a, b).ratio()
+
+
+def _normalizar_activo(estado_raw: str):
+    """
+    Convierte estado de activo desde texto a valor de sistema.
+    Acepta: ACTIVO/INACTIVO/1/0 y devuelve 1/0.
+    """
+    if not estado_raw:
+        return None
+    estado_upper = _normalizar(estado_raw).upper()
+    if estado_upper == "ACTIVO":
+        return 1
+    if estado_upper == "INACTIVO":
+        return 0
+    if estado_upper in ("1", "0"):
+        return int(estado_upper)
+    return None
+
+
+def _construir_catalogo_combinaciones_formato(wb) -> dict:
+    """
+    Construye catálogo de combinaciones válidas (Canal, Cadena, Formato)
+    usando hojas ocultas Formatos, Cadenas y Canales.
+    """
+    def _buscar_hoja(nombre_objetivo: str):
+        objetivo_norm = _normalizar_nombre_hoja(nombre_objetivo)
+        for nombre in wb.sheetnames:
+            if _normalizar_nombre_hoja(nombre) == objetivo_norm:
+                return wb[nombre]
+        return None
+
+    ws_formatos = _buscar_hoja("Formatos")
+    ws_cadenas = _buscar_hoja("Cadenas")
+    ws_canales = _buscar_hoja("Canales")
+    if not ws_formatos or not ws_cadenas or not ws_canales:
+        return {"combos": [], "exactos": {}}
+
+    def _resolver_mapa_hoja(ws, alias_por_canonico: dict[str, tuple[str, ...]], fallback_por_canonico: dict[str, int]):
+        candidatos = [alias for aliases in alias_por_canonico.values() for alias in aliases]
+        fila_enc = _encontrar_fila_encabezados(ws, candidatos, max_filas=20)
+        mapa = _mapear_indices_alias(ws, fila_enc, alias_por_canonico)
+        for canonico, fallback_col in fallback_por_canonico.items():
+            if canonico not in mapa and fallback_col <= ws.max_column:
+                mapa[canonico] = fallback_col
+        return fila_enc, mapa
+
+    fila_enc_cad, mapa_cad = _resolver_mapa_hoja(
+        ws_cadenas,
+        {
+            "id": ("id", "chain_id", "cadena_id", "id cadena"),
+            "dsc": ("chain_dsc", "cadena_dsc", "cadena", "description", "descripcion", "nombre cadena"),
+        },
+        {"id": 1, "dsc": 2},
+    )
+    fila_enc_can, mapa_can = _resolver_mapa_hoja(
+        ws_canales,
+        {
+            "id": ("id", "channel_id", "canal_id", "id canal"),
+            "dsc": ("channel_dsc", "canal_dsc", "canal", "description", "descripcion", "nombre canal"),
+        },
+        {"id": 1, "dsc": 2},
+    )
+    fila_enc_fmt, mapa_fmt = _resolver_mapa_hoja(
+        ws_formatos,
+        {
+            "format_dsc": ("format_dsc", "formato_dsc", "formato", "nombre formato"),
+            "chain_id": ("chain_id", "cadena_id", "id cadena"),
+            "channel_id": ("channel_id", "canal_id", "id canal"),
+        },
+        {"format_dsc": 2, "chain_id": 3, "channel_id": 4},
+    )
+
+    cadenas_por_id = {}
+    for fila in ws_cadenas.iter_rows(min_row=fila_enc_cad + 1, values_only=True):
+        val_id = _normalizar(fila[mapa_cad["id"] - 1]) if "id" in mapa_cad else ""
+        val_dsc = _normalizar(fila[mapa_cad["dsc"] - 1]) if "dsc" in mapa_cad else ""
+        if val_id and val_dsc:
+            cadenas_por_id[val_id] = val_dsc
+
+    canales_por_id = {}
+    for fila in ws_canales.iter_rows(min_row=fila_enc_can + 1, values_only=True):
+        val_id = _normalizar(fila[mapa_can["id"] - 1]) if "id" in mapa_can else ""
+        val_dsc = _normalizar(fila[mapa_can["dsc"] - 1]) if "dsc" in mapa_can else ""
+        if val_id and val_dsc:
+            canales_por_id[val_id] = val_dsc
+
+    combos = []
+    exactos = {}
+    for fila in ws_formatos.iter_rows(min_row=fila_enc_fmt + 1, values_only=True):
+        format_dsc = _normalizar(fila[mapa_fmt["format_dsc"] - 1]) if "format_dsc" in mapa_fmt else ""
+        chain_id = _normalizar(fila[mapa_fmt["chain_id"] - 1]) if "chain_id" in mapa_fmt else ""
+        channel_id = _normalizar(fila[mapa_fmt["channel_id"] - 1]) if "channel_id" in mapa_fmt else ""
+        if not (format_dsc and chain_id and channel_id):
+            continue
+
+        chain_dsc = cadenas_por_id.get(chain_id, "")
+        channel_dsc = canales_por_id.get(channel_id, "")
+        if not (chain_dsc and channel_dsc):
+            continue
+
+        canal_norm = _normalizar_texto_catalogo(channel_dsc)
+        cadena_norm = _normalizar_texto_catalogo(chain_dsc)
+        formato_norm = _normalizar_texto_catalogo(format_dsc)
+        if not (canal_norm and cadena_norm and formato_norm):
+            continue
+
+        combo = {
+            "canal": channel_dsc,
+            "cadena": chain_dsc,
+            "formato": format_dsc,
+            "canal_norm": canal_norm,
+            "cadena_norm": cadena_norm,
+            "formato_norm": formato_norm,
+        }
+        key = (canal_norm, cadena_norm, formato_norm)
+        if key not in exactos:
+            exactos[key] = combo
+            combos.append(combo)
+
+    return {"combos": combos, "exactos": exactos}
+
+
+def _resolver_combinacion_mas_cercana(canal: str, cadena: str, formato: str, catalogo: dict):
+    """
+    Resuelve combinación contra catálogo válido.
+    Retorna (combo, es_match_exacto).
+    """
+    combos = catalogo.get("combos", [])
+    exactos = catalogo.get("exactos", {})
+    if not combos:
+        return None, False
+
+    canal_norm = _normalizar_texto_catalogo(canal)
+    cadena_norm = _normalizar_texto_catalogo(cadena)
+    formato_norm = _normalizar_texto_catalogo(formato)
+
+    if not (canal_norm or cadena_norm or formato_norm):
+        return None, False
+
+    key = (canal_norm, cadena_norm, formato_norm)
+    if key in exactos:
+        return exactos[key], True
+
+    mejor_combo = None
+    mejor_score = -1.0
+    for combo in combos:
+        score = 0.0
+        peso = 0.0
+        if formato_norm:
+            score += 0.50 * _similaridad_texto(formato_norm, combo["formato_norm"])
+            peso += 0.50
+        if cadena_norm:
+            score += 0.30 * _similaridad_texto(cadena_norm, combo["cadena_norm"])
+            peso += 0.30
+        if canal_norm:
+            score += 0.20 * _similaridad_texto(canal_norm, combo["canal_norm"])
+            peso += 0.20
+        if peso == 0:
+            continue
+        score_final = score / peso
+        if score_final > mejor_score:
+            mejor_score = score_final
+            mejor_combo = combo
+
+    return mejor_combo, False
+
+
 # ══════════════════════════════════════════════════════════════════════
 # Función principal
 # ══════════════════════════════════════════════════════════════════════
@@ -292,18 +557,46 @@ def actualizar_catalogo_lugares(
     except Exception as exc:
         raise RuntimeError(f"No se pudo abrir el Maestro de lugares: {exc}")
 
-    if _HOJA_CLIENTE not in wb_cliente.sheetnames:
+    hojas_cliente_norm = {
+        _normalizar_nombre_hoja(h): h for h in wb_cliente.sheetnames
+    }
+    hoja_cliente = None
+    for esperada in _HOJAS_CLIENTE:
+        esperada_norm = _normalizar_nombre_hoja(esperada)
+        if esperada_norm in hojas_cliente_norm:
+            hoja_cliente = hojas_cliente_norm[esperada_norm]
+            break
+    if hoja_cliente is None:
         available = ", ".join(wb_cliente.sheetnames)
         wb_cliente.close()
-        raise RuntimeError(f"No se encontró la hoja '{_HOJA_CLIENTE}' en el Maestro de lugares.\n"
+        esperadas = " o ".join(f"'{h}'" for h in _HOJAS_CLIENTE)
+        raise RuntimeError(f"No se encontró ninguna hoja esperada ({esperadas}) "
+                           f"en el Maestro de lugares.\n"
                            f"Hojas disponibles: {available}")
-    ws_cliente = wb_cliente[_HOJA_CLIENTE]
+    ws_cliente = wb_cliente[hoja_cliente]
 
     # Detectar fila de encabezados en el archivo del cliente
     fila_enc_cliente = _encontrar_fila_encabezados(ws_cliente, _COLS_CLIENTE)
     print(f"  Fila de encabezados (Maestro): {fila_enc_cliente}")
 
-    mapa_cliente = _mapear_indices(ws_cliente, fila_enc_cliente, set(_COLS_CLIENTE))
+    mapa_cliente = _mapear_indices_alias(ws_cliente, fila_enc_cliente, {
+        "BRANCHID": ("BRANCHID", "CODIGO INTERNO", "CÓDIGO INTERNO"),
+        "NOMBRE DE LA TIENDA": ("NOMBRE DE LA TIENDA",),
+        "Nombre Lugar": ("Nombre Lugar", "NOMBRE LUGAR"),
+        "ESTADO": ("ESTADO",),
+        "CANAL": ("CANAL", "CANAL 1"),
+        "SUBCANAL": ("SUBCANAL", "CANAL II"),
+        "CADENA": ("CADENA",),
+        "FORMATO CLIENTE": ("FORMATO CLIENTE",),
+        "FORMATO": ("FORMATO",),
+        "AREA NIELSEN": ("AREA NIELSEN",),
+        "DETERMINANTE": ("DETERMINANTE",),
+        "CLIENTE SELL-IN (SAP)": ("CLIENTE SELL-IN (SAP)",),
+        "LATITUD": ("LATITUD",),
+        "LONGITUD": ("LONGITUD",),
+        "STATUS OPERACIONES": ("STATUS OPERACIONES",),
+        "Activo": ("Activo", "ACTIVO"),
+    })
 
     # Verificar columnas mínimas requeridas
     faltantes = [c for c in _COLS_CLIENTE_REQUERIDAS if c not in mapa_cliente]
@@ -382,41 +675,134 @@ def actualizar_catalogo_lugares(
 
     # Reabrir Maestro para extraer filas completas de los que faltan
     wb_cliente2 = openpyxl.load_workbook(ruta_maestro, read_only=True, data_only=True, keep_links=False)
-    ws_cliente2 = wb_cliente2[_HOJA_CLIENTE]
+    ws_cliente2 = wb_cliente2[hoja_cliente]
 
-    faltantes_maestro = []
-    encabezados_maestro = None
+    faltantes_maestro: list[str] = []
     for idx_fila, fila in enumerate(
             ws_cliente2.iter_rows(min_row=fila_enc_cliente, values_only=True), start=fila_enc_cliente):
         if idx_fila == fila_enc_cliente:
-            encabezados_maestro = fila
             continue
         branch_raw = fila[col_branch - 1]
         if branch_raw is None:
             continue
         branch_id = _normalizar(branch_raw)
         if branch_id and branch_id not in codigos_catalogo:
-            faltantes_maestro.append(fila)
+            faltantes_maestro.append(branch_id)
 
     wb_cliente2.close()
 
     if faltantes_maestro:
-        wb_falt = openpyxl.Workbook()
-        ws_falt = wb_falt.active
-        ws_falt.title = "No encontrados"
-        if encabezados_maestro:
-            ws_falt.append(list(encabezados_maestro))
-        for fila_data in faltantes_maestro:
-            ws_falt.append(list(fila_data))
         ruta_faltantes = os.path.join(carpeta_salida, "codigos_no_encontrados_en_catalogo.xlsx")
+        shutil.copy2(ruta_layout_places, ruta_faltantes)
+        wb_falt = openpyxl.load_workbook(ruta_faltantes, keep_links=False)
+        ws_falt = wb_falt[_HOJA_SISTEMA]
+        catalogo_combos = _construir_catalogo_combinaciones_formato(wb_falt)
+        ajustes_combinacion = 0
+
+        fila_base_falt = fila_enc_sistema + 1
+        for offset, branch_id in enumerate(faltantes_maestro):
+            fila_destino = fila_base_falt + offset
+
+            if fila_destino > ws_falt.max_row:
+                ws_falt.append([None] * ws_falt.max_column)
+
+            for col_idx in range(1, ws_falt.max_column + 1):
+                ws_falt.cell(row=fila_destino, column=col_idx).value = None
+
+            datos = datos_cliente.get(branch_id, {})
+
+            if "Código Interno" in mapa_sistema:
+                ws_falt.cell(row=fila_destino, column=mapa_sistema["Código Interno"]).value = branch_id
+
+            for col_cliente, destino in _MAPEO.items():
+                nuevo_val_str = datos.get(col_cliente, "")
+                if not nuevo_val_str:
+                    continue
+                destinos = [destino] if isinstance(destino, str) else destino
+                for col_sis in destinos:
+                    if col_sis not in mapa_sistema:
+                        continue
+                    cell = ws_falt.cell(row=fila_destino, column=mapa_sistema[col_sis])
+                    if col_sis in ("Latitud", "Longitud"):
+                        try:
+                            cell.value = float(nuevo_val_str)
+                        except ValueError:
+                            cell.value = nuevo_val_str
+                    else:
+                        cell.value = nuevo_val_str
+
+            # Mapeos extra que solo aplican para archivo de altas (ADD)
+            for fuentes_cliente, col_sis in _MAPEO_ADD:
+                if col_sis not in mapa_sistema:
+                    continue
+                valor = ""
+                for fuente in fuentes_cliente:
+                    valor = datos.get(fuente, "")
+                    if valor:
+                        break
+                if valor:
+                    ws_falt.cell(row=fila_destino, column=mapa_sistema[col_sis]).value = valor
+
+            # Activo para ADD: STATUS OPERACIONES / Activo -> 1/0
+            if "Activo" in mapa_sistema:
+                nuevo_activo = _normalizar_activo(
+                    datos.get("STATUS OPERACIONES") or datos.get("Activo", "")
+                )
+                if nuevo_activo is not None:
+                    ws_falt.cell(row=fila_destino, column=mapa_sistema["Activo"]).value = nuevo_activo
+
+            # Ajustar combinación Canal/Cadena/Formato contra catálogo válido de la plantilla
+            if all(c in mapa_sistema for c in ("Canal", "Cadena", "Formato")):
+                val_canal = _normalizar(ws_falt.cell(row=fila_destino, column=mapa_sistema["Canal"]).value)
+                val_cadena = _normalizar(ws_falt.cell(row=fila_destino, column=mapa_sistema["Cadena"]).value)
+                val_formato = _normalizar(ws_falt.cell(row=fila_destino, column=mapa_sistema["Formato"]).value)
+
+                if val_canal and val_cadena and val_formato:
+                    combo, exacto = _resolver_combinacion_mas_cercana(
+                        val_canal,
+                        val_cadena,
+                        val_formato,
+                        catalogo_combos,
+                    )
+                    if combo and not exacto:
+                        ws_falt.cell(row=fila_destino, column=mapa_sistema["Canal"]).value = combo["canal"]
+                        ws_falt.cell(row=fila_destino, column=mapa_sistema["Cadena"]).value = combo["cadena"]
+                        ws_falt.cell(row=fila_destino, column=mapa_sistema["Formato"]).value = combo["formato"]
+                        ajustes_combinacion += 1
+
+            # Nombre canónico usando la Cadena final de la fila ADD
+            if "Nombre Lugar" in mapa_sistema:
+                nombre_tienda_nuevo = datos.get("NOMBRE DE LA TIENDA") or datos.get("Nombre Lugar", "")
+                cadena = ""
+                if "Cadena" in mapa_sistema:
+                    cadena = _normalizar(ws_falt.cell(row=fila_destino, column=mapa_sistema["Cadena"]).value)
+                if nombre_tienda_nuevo:
+                    nombre_tienda_limpio = _quitar_siglas_cadena(nombre_tienda_nuevo, cadena)
+                    partes = [p for p in [branch_id, cadena, nombre_tienda_limpio] if p]
+                    nombre_nuevo = _eliminar_duplicados_consecutivos(" ".join(partes))
+                    nombre_nuevo = " ".join(nombre_nuevo.split())
+                    if len(nombre_nuevo) > 60:
+                        nombre_nuevo = nombre_nuevo[:60]
+                    ws_falt.cell(row=fila_destino, column=mapa_sistema["Nombre Lugar"]).value = nombre_nuevo
+
+            if "Acción" in mapa_sistema:
+                ws_falt.cell(row=fila_destino, column=mapa_sistema["Acción"]).value = "ADD"
+
+        ultima_fila_util = fila_base_falt + len(faltantes_maestro) - 1
+        if ws_falt.max_row > ultima_fila_util:
+            ws_falt.delete_rows(ultima_fila_util + 1, ws_falt.max_row - ultima_fila_util)
+
         wb_falt.save(ruta_faltantes)
         wb_falt.close()
         print(f"  Códigos del Maestro no encontrados en catálogo: {len(faltantes_maestro)}")
+        if ajustes_combinacion:
+            print(f"  Combinaciones Canal/Cadena/Formato ajustadas por similitud: {ajustes_combinacion}")
         print(f"  Archivo generado: {os.path.basename(ruta_faltantes)}")
 
     actualizados   = 0
     sin_cambios    = 0
     no_encontrados = 0
+    filas_update = []
 
     # Pre-cargar todas las filas de datos como objetos de celda en memoria
     # Esto evita llamadas repetidas a ws.cell(row, col) que son lentas
@@ -499,30 +885,28 @@ def actualizar_catalogo_lugares(
         # Valores aceptados: ACTIVO → 1, INACTIVO → 0, 1 → 1, 0 → 0.
         if "Activo" in mapa_sistema:
             estado_raw = datos.get("STATUS OPERACIONES") or datos.get("Activo", "")
-            if estado_raw:
-                estado_upper = estado_raw.upper()
-                if estado_upper == "ACTIVO":
-                    nuevo_activo = 1
-                elif estado_upper == "INACTIVO":
-                    nuevo_activo = 0
-                elif estado_upper in ("1", "0"):
-                    nuevo_activo = int(estado_upper)
-                else:
-                    nuevo_activo = None
-
-                if nuevo_activo is not None:
-                    cell_activo = fila_cells[mapa_sistema["Activo"] - 1]
-                    if _normalizar(nuevo_activo) != _normalizar(cell_activo.value):
-                        cell_activo.value = nuevo_activo
-                        fila_modificada = True
+            nuevo_activo = _normalizar_activo(estado_raw)
+            if nuevo_activo is not None:
+                cell_activo = fila_cells[mapa_sistema["Activo"] - 1]
+                if _normalizar(nuevo_activo) != _normalizar(cell_activo.value):
+                    cell_activo.value = nuevo_activo
+                    fila_modificada = True
 
         if fila_modificada:
             fila_cells[col_accion - 1].value = "UPDATE"
             actualizados += 1
+            filas_update.append([cell.value for cell in fila_cells])
         else:
             sin_cambios += 1
 
-    # ── 4. Guardar ────────────────────────────────────────────────────
+    # ── 4. Conservar solo filas UPDATE en archivo final ──────────────
+    filas_en_hoja = ws_sistema.max_row
+    if filas_en_hoja > fila_enc_sistema:
+        ws_sistema.delete_rows(fila_enc_sistema + 1, filas_en_hoja - fila_enc_sistema)
+    for fila in filas_update:
+        ws_sistema.append(fila)
+
+    # ── 5. Guardar ────────────────────────────────────────────────────
     try:
         wb_sistema.save(ruta_salida)
     except PermissionError:
@@ -534,14 +918,13 @@ def actualizar_catalogo_lugares(
 
     wb_sistema.close()
 
-    # ── 5. Dividir en partes si supera el límite ──────────────────────
-    total_filas_datos = len(todas_las_filas)
+    # ── 6. Dividir en partes si supera el límite ──────────────────────
+    total_filas_datos = len(filas_update)
     if total_filas_datos > _LIMITE_REGISTROS:
         print(f"  El catálogo tiene {total_filas_datos:,} registros → "
               f"dividiendo en partes de {_LIMITE_REGISTROS:,}…")
 
-        # Extraer valores de las filas de datos (ya cargadas en memoria como Cell objects)
-        filas_datos = [[cell.value for cell in row] for row in todas_las_filas]
+        filas_datos = filas_update
 
         ext = os.path.splitext(ruta_salida)[1]
         nombre_base = "layout_places_actualizado"

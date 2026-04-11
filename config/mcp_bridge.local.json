@@ -1,6 +1,0 @@
-{
-  "bridge": "core.creador_de_tareas.mcp_bridge_runtime:EnvCallableMcpChromeBridge",
-  "evaluate_fn": "core.creador_de_tareas.mcp_callables_adapter:evaluate_script",
-  "list_requests_fn": "core.creador_de_tareas.mcp_callables_adapter:list_network_requests",
-  "get_request_fn": "core.creador_de_tareas.mcp_callables_adapter:get_network_request"
-}
