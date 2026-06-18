@@ -16,6 +16,7 @@ from ui.vista_productos import VistaProductos
 from ui.vista_catalogo_lugares import VistaActualizarCatalogoLugares
 from ui.vista_dividir_archivo import VistaDividirArchivo
 from ui.vista_selector_formato import VistaSelectorFormato
+from ui.vista_actualizacion_puestos import VistaActualizacionPuestos
 
 
 HOVER_BG = "#F8FEFF"
@@ -46,8 +47,9 @@ CARDS = [
         "vista": VistaSelectorFormato,
     },
     {
-        "titulo": "Automatización 6",
-        "subtitulo": "Próximamente",
+        "titulo": "Actualización de puestos",
+        "subtitulo": "Electrolit MX",
+        "vista": VistaActualizacionPuestos,
     },
 ]
 
@@ -264,6 +266,10 @@ class MainWindow(QMainWindow):
         self._vista_selector_formato = VistaSelectorFormato(back_cb=self._go_home)
         self._stack.addWidget(self._vista_selector_formato)
 
+        # Página 6
+        self._vista_actualizacion_puestos = VistaActualizacionPuestos(back_cb=self._go_home)
+        self._stack.addWidget(self._vista_actualizacion_puestos)
+
     # ── Navegación ────────────────────────────────────────────────────
     def _navigate_to(self, vista_class):
         mapping = {
@@ -271,6 +277,7 @@ class MainWindow(QMainWindow):
             VistaActualizarCatalogoLugares: 3,
             VistaDividirArchivo:            4,
             VistaSelectorFormato:           5,
+            VistaActualizacionPuestos:      6,
         }
         idx = mapping.get(vista_class)
         if idx is not None:

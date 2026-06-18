@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.selector_de_formatos.selector_formato import (
+    FormatTarget,
     SelectionSummary,
     WebSelectionSession,
     load_items_from_excel,
@@ -70,7 +71,7 @@ class VistaSelectorFormato(QWidget):
     def __init__(self, back_cb=None, parent=None):
         super().__init__(parent)
         self._back_cb = back_cb
-        self._items: list[str] = []
+        self._items: list[FormatTarget] = []
         self._session: WebSelectionSession | None = None
         self._awaiting_continue = False
         self._running = False
@@ -108,7 +109,7 @@ class VistaSelectorFormato(QWidget):
         outer.addSpacing(4)
 
         steps = QLabel(
-            "1. Carga la lista desde Excel o escribe/pega los formatos.\n"
+            "1. Carga la lista desde Excel o escribe/pega Canal, Cadena y Formato.\n"
             "2. Comienza proceso para iniciar sesión.\n"
             "3. Dirígete a la pantalla de clasificación de lugares.\n"
             "4. Da clic en Continuar proceso para ejecutar la seleccion."
@@ -170,10 +171,11 @@ class VistaSelectorFormato(QWidget):
         manual_layout.setSpacing(0)
 
         self._tbl_formats = FormatTableWidget()
-        self._tbl_formats.setColumnCount(1)
-        self._tbl_formats.setHorizontalHeaderLabels(["Formato"])
-        self._tbl_formats.horizontalHeader().setStretchLastSection(True)
-        self._tbl_formats.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self._tbl_formats.setColumnCount(3)
+        self._tbl_formats.setHorizontalHeaderLabels(["Canal", "Cadena", "Formato"])
+        self._tbl_formats.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self._tbl_formats.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self._tbl_formats.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self._tbl_formats.setSelectionBehavior(QAbstractItemView.SelectRows)
         self._tbl_formats.setSelectionMode(QAbstractItemView.SingleSelection)
         self._tbl_formats.verticalHeader().setVisible(False)
@@ -373,26 +375,43 @@ class VistaSelectorFormato(QWidget):
 
     def _table_has_data(self) -> bool:
         for row in range(self._tbl_formats.rowCount()):
-            item = self._tbl_formats.item(row, 0)
+            item = self._tbl_formats.item(row, 2)
             text = item.text().strip() if item else ""
             if text:
                 return True
         return False
 
-    def _collect_table_items(self) -> list[str]:
-        values: list[str] = []
-        seen: set[str] = set()
+    def _collect_table_items(self) -> list[FormatTarget]:
+        values: list[FormatTarget] = []
+        seen: set[tuple[str, str, str]] = set()
         for row in range(self._tbl_formats.rowCount()):
-            item = self._tbl_formats.item(row, 0)
-            text = item.text().strip() if item else ""
-            if not text:
+            channel_item = self._tbl_formats.item(row, 0)
+            chain_item = self._tbl_formats.item(row, 1)
+            format_item = self._tbl_formats.item(row, 2)
+
+            channel = channel_item.text().strip() if channel_item else ""
+            chain = chain_item.text().strip() if chain_item else ""
+            format_name = format_item.text().strip() if format_item else ""
+
+            if not format_name:
                 continue
-            key = text.casefold()
+
+            target = FormatTarget(channel_id=channel, chain_id=chain, format_name=format_name)
+            key = target.dedupe_key()
             if key in seen:
                 continue
             seen.add(key)
-            values.append(text)
+            values.append(target)
         return values
+
+    def _validate_items(self, items: list[FormatTarget]) -> bool:
+        for idx, item in enumerate(items, start=1):
+            if not item.channel_id or not item.chain_id or not item.format_name:
+                self._show_error(
+                    f"Fila {idx} incompleta. Debe incluir Canal, Cadena y Formato."
+                )
+                return False
+        return True
 
     def _on_table_item_changed(self, _item):
         if self._table_sync_locked:
@@ -422,8 +441,8 @@ class VistaSelectorFormato(QWidget):
         else:
             self._dz_excel.setEnabled(True)
 
-    def _build_items(self) -> list[str]:
-        excel_items: list[str] = []
+    def _build_items(self) -> list[FormatTarget]:
+        excel_items: list[FormatTarget] = []
         if self._dz_excel.tiene_archivo():
             try:
                 excel_items = load_items_from_excel(self._dz_excel.ruta)
@@ -440,11 +459,14 @@ class VistaSelectorFormato(QWidget):
         source_items = excel_items if self._dz_excel.tiene_archivo() else manual_items
         self._items = source_items
 
+        if source_items and not self._validate_items(source_items):
+            return []
+
         if source_items:
             self._state.setCurrentIndex(0)
             self._status.setText("Lista lista para ejecutar.")
         else:
-            self._status.setText("Carga un Excel o escribe una lista para continuar.")
+            self._status.setText("Carga un Excel o escribe Canal, Cadena y Formato para continuar.")
 
         return source_items
 
@@ -520,7 +542,10 @@ class VistaSelectorFormato(QWidget):
         QApplication.processEvents()
 
     def _show_success(self, summary: SelectionSummary):
-        self._lbl_ok.setText("Proceso terminado correctamente.")
+        self._lbl_ok.setText(
+            "Proceso terminado.\n"
+            f"Exitosos: {len(summary.success)} | Ignorados: {len(summary.ignored)} | Fallidos: {len(summary.failed)}"
+        )
         self._status.setText("")
         self._state.setCurrentIndex(3)
 
@@ -548,9 +573,10 @@ class VistaSelectorFormato(QWidget):
         row = self._tbl_formats.rowCount()
         self._table_sync_locked = True
         self._tbl_formats.insertRow(row)
-        item = QTableWidgetItem("")
-        item.setForeground(QColor("#222222"))
-        self._tbl_formats.setItem(row, 0, item)
+        for col in range(3):
+            item = QTableWidgetItem("")
+            item.setForeground(QColor("#222222"))
+            self._tbl_formats.setItem(row, col, item)
         self._table_sync_locked = False
         self._tbl_formats.setCurrentCell(row, 0)
         self._tbl_formats.editItem(self._tbl_formats.item(row, 0))
@@ -572,7 +598,7 @@ class VistaSelectorFormato(QWidget):
         text = QApplication.clipboard().text()
         values = parse_items_from_text(text)
         if not values:
-            self._status.setText("No hay texto valido en el portapapeles.")
+            self._status.setText("No hay filas validas en portapapeles. Usa: Canal;Cadena;Formato")
             return
 
         self._table_sync_locked = True
@@ -580,11 +606,13 @@ class VistaSelectorFormato(QWidget):
         for value in values:
             row = self._tbl_formats.rowCount()
             self._tbl_formats.insertRow(row)
-            item = QTableWidgetItem(value)
-            item.setForeground(QColor("#222222"))
-            self._tbl_formats.setItem(row, 0, item)
+            row_values = [value.channel_id, value.chain_id, value.format_name]
+            for col, col_value in enumerate(row_values):
+                item = QTableWidgetItem(col_value)
+                item.setForeground(QColor("#222222"))
+                self._tbl_formats.setItem(row, col, item)
         self._table_sync_locked = False
-        self._status.setText(f"Se cargaron {len(values)} formatos desde el portapapeles.")
+        self._status.setText(f"Se cargaron {len(values)} filas desde el portapapeles.")
         self._sync_source_lock()
 
     def _on_back(self):

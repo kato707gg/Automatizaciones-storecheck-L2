@@ -6,12 +6,13 @@ y actualiza los campos que hayan cambiado:
 
   Cliente (Maestro)               →  Sistema (layout_places)
   ────────────────────────────────────────────────────────────
-  BRANCHID                        →  Código Interno  (clave de búsqueda)
+    STORECHECK ID                   →  Código Interno  (clave de búsqueda)
   NOMBRE DE LA TIENDA / Nombre Lugar →  Nombre Lugar
   ESTADO                          →  tags_ESTADO  +  tags_region_precios
   LATITUD                         →  Latitud
   LONGITUD                        →  Longitud
   STATUS OPERACIONES / Activo     →  Activo  (ACTIVO→1, INACTIVO→0, 1/0 pasan directo)
+    RUTA / RUTA CALENDARIO FORMAX   →  tags_CANAL + tags_REGION + tags_SUBREGION + tags_RUTA
 
 Cuando una fila es modificada se pone "UPDATE" en la columna Acción.
 El resultado se guarda en carpeta_salida con el nombre del layout_places original.
@@ -27,9 +28,10 @@ import openpyxl
 # ── Columnas del archivo del cliente ─────────────────────────────────
 # Las columnas marcadas como opcionales no son obligatorias; se usan si están presentes.
 _COLS_CLIENTE = [
-    "BRANCHID",
-    "CODIGO INTERNO",     # opcional: alternativa a BRANCHID
-    "Código Interno",     # opcional: alternativa a BRANCHID
+    "STORECHECK ID",
+    "BRANCHID",           # opcional: alternativa a STORECHECK ID
+    "CODIGO INTERNO",     # opcional: alternativa a STORECHECK ID
+    "Código Interno",     # opcional: alternativa a STORECHECK ID
     "NOMBRE DE LA TIENDA",
     "Nombre Lugar",        # opcional: alternativa a NOMBRE DE LA TIENDA
     "ESTADO",
@@ -46,6 +48,8 @@ _COLS_CLIENTE = [
     "Area Nielsen",        # opcional: alternativa a AREA NIELSEN
     "DETERMINANTE",        # opcional
     "CLIENTE SELL-IN (SAP)",  # opcional
+    "RUTA CALENDARIO FORMAX",  # opcional
+    "RUTA",               # opcional: alternativa a RUTA CALENDARIO FORMAX
     "LATITUD",
     "LONGITUD",
     "STATUS OPERACIONES",  # opcional: fuente para columna Activo
@@ -53,7 +57,7 @@ _COLS_CLIENTE = [
 ]
 
 # Columnas que DEBEN existir (al menos una de cada grupo alternativo)
-_COLS_CLIENTE_REQUERIDAS = ["BRANCHID", "ESTADO", "LATITUD", "LONGITUD"]
+_COLS_CLIENTE_REQUERIDAS = ["STORECHECK ID", "ESTADO", "LATITUD", "LONGITUD"]
 _COLS_NOMBRE_TIENDA = ["NOMBRE DE LA TIENDA", "Nombre Lugar"]  # al menos una
 _COLS_ACTIVO = ["STATUS OPERACIONES", "Activo"]                # ambas opcionales
 
@@ -66,6 +70,11 @@ _COLS_SISTEMA = [
     "Formato",
     "Area Nielsen",
     "tags_ESTADO",
+    "tags_ESTATUS",
+    "tags_CANAL",
+    "tags_REGION",
+    "tags_RUTA",
+    "tags_SUBREGION",
     "tags_region_precios",
     "tags_CANAL 1",
     "tags_CLIENTE SELL-IN (SAP)",
@@ -96,7 +105,7 @@ _MAPEO_ADD = (
     (("CADENA",), "Cadena"),
     (("FORMATO CLIENTE", "FORMATO"), "Formato"),
     (("DETERMINANTE",), "tags_DETERMINANTE"),
-    (("FORMATO",), "tags_FORMATO"),
+    (("FORMATO_EXACTO",), "tags_FORMATO"),
 )
 
 # ── Nombres de hoja esperados ────────────────────────────────────────
@@ -183,6 +192,18 @@ def _mapear_indices_alias(ws, fila_enc: int, alias_por_canonico: dict[str, tuple
         if canonico:
             mapa[canonico] = col_idx
     return mapa
+
+
+def _mapear_indice_exacto(ws, fila_enc: int, encabezado_exacto: str) -> int | None:
+    """Busca un encabezado exacto (case-sensitive) en la fila indicada."""
+    fila = list(ws.iter_rows(
+        min_row=fila_enc, max_row=fila_enc, values_only=True))[0]
+    for col_idx, v in enumerate(fila, start=1):
+        if v is None:
+            continue
+        if str(v).strip() == encabezado_exacto:
+            return col_idx
+    return None
 
 
 def _normalizar_nombre_hoja(nombre: str) -> str:
@@ -346,9 +367,12 @@ def _normalizar(valor) -> str:
 def _normalizar_texto_catalogo(valor) -> str:
     """Normaliza textos de negocio para comparar catálogos (canal/cadena/formato)."""
     s = _normalizar_encabezado(_normalizar(valor))
-    for ch in ("/", "-", "_", ",", ".", ";", ":", "(", ")"):
+    # Se conserva '/' porque distingue combinaciones válidas del catálogo.
+    for ch in ("-", "_", ",", ".", ";", ":", "(", ")"):
         s = s.replace(ch, " ")
-    return " ".join(s.split())
+    s = " ".join(s.split())
+    partes = [" ".join(p.split()) for p in s.split("/")]
+    return "/".join(partes)
 
 
 def _similaridad_texto(a: str, b: str) -> float:
@@ -372,6 +396,122 @@ def _normalizar_activo(estado_raw: str):
         return 0
     if estado_upper in ("1", "0"):
         return int(estado_upper)
+    return None
+
+
+def _descomponer_ruta(ruta_raw: str) -> dict[str, str]:
+    """Descompone una ruta tipo NTE_BAJ_CEL01_CEL02 en tags de sistema."""
+    if not ruta_raw:
+        return {}
+    ruta_norm = _normalizar(ruta_raw).strip().upper()
+    if not ruta_norm:
+        return {}
+    partes = [parte.strip() for parte in ruta_norm.split("_") if parte.strip()]
+    destinos = ("tags_CANAL", "tags_REGION", "tags_SUBREGION", "tags_RUTA")
+    return {destino: parte for destino, parte in zip(destinos, partes) if parte}
+
+
+def _cargar_datos_maestro_lugares(ruta_maestro: str) -> tuple[dict[str, dict[str, str]], str, int, int]:
+    """Carga un maestro de lugares y devuelve sus datos normalizados por STORECHECK ID."""
+    try:
+        wb_cliente = openpyxl.load_workbook(ruta_maestro, read_only=True, data_only=True, keep_links=False)
+    except PermissionError:
+        raise RuntimeError("El Maestro de lugares está abierto en Excel. Ciérralo e intenta de nuevo.")
+    except Exception as exc:
+        raise RuntimeError(f"No se pudo abrir el Maestro de lugares: {exc}")
+
+    try:
+        hojas_cliente_norm = {
+            _normalizar_nombre_hoja(h): h for h in wb_cliente.sheetnames
+        }
+        hoja_cliente = None
+        for esperada in _HOJAS_CLIENTE:
+            esperada_norm = _normalizar_nombre_hoja(esperada)
+            if esperada_norm in hojas_cliente_norm:
+                hoja_cliente = hojas_cliente_norm[esperada_norm]
+                break
+        if hoja_cliente is None:
+            available = ", ".join(wb_cliente.sheetnames)
+            esperadas = " o ".join(f"'{h}'" for h in _HOJAS_CLIENTE)
+            raise RuntimeError(f"No se encontró ninguna hoja esperada ({esperadas}) "
+                               f"en el Maestro de lugares.\n"
+                               f"Hojas disponibles: {available}")
+
+        ws_cliente = wb_cliente[hoja_cliente]
+        fila_enc_cliente = _encontrar_fila_encabezados(ws_cliente, _COLS_CLIENTE)
+        mapa_cliente = _mapear_indices_alias(ws_cliente, fila_enc_cliente, {
+            "STORECHECK ID": ("STORECHECK ID", "BRANCHID", "CODIGO INTERNO", "CÓDIGO INTERNO"),
+            "NOMBRE DE LA TIENDA": ("NOMBRE DE LA TIENDA",),
+            "Nombre Lugar": ("Nombre Lugar", "NOMBRE LUGAR"),
+            "ESTADO": ("ESTADO",),
+            "CANAL": ("CANAL", "CANAL 1"),
+            "SUBCANAL": ("SUBCANAL", "CANAL II"),
+            "CADENA": ("CADENA",),
+            "FORMATO CLIENTE": ("FORMATO CLIENTE",),
+            "FORMATO": ("FORMATO",),
+            "AREA NIELSEN": ("AREA NIELSEN",),
+            "DETERMINANTE": ("DETERMINANTE",),
+            "CLIENTE SELL-IN (SAP)": ("CLIENTE SELL-IN (SAP)",),
+            "RUTA": ("RUTA CALENDARIO FORMAX", "RUTA"),
+            "LATITUD": ("LATITUD",),
+            "LONGITUD": ("LONGITUD",),
+            "STATUS OPERACIONES": ("STATUS OPERACIONES",),
+            "Activo": ("Activo", "ACTIVO"),
+        })
+
+        idx_formato_exacto = _mapear_indice_exacto(ws_cliente, fila_enc_cliente, "FORMATO")
+        if idx_formato_exacto is not None:
+            mapa_cliente["FORMATO_EXACTO"] = idx_formato_exacto
+
+        faltantes = [c for c in _COLS_CLIENTE_REQUERIDAS if c not in mapa_cliente]
+        if faltantes:
+            raise RuntimeError(f"Columnas no encontradas en Maestro de lugares: {faltantes}\n"
+                               f"Encabezados detectados en fila {fila_enc_cliente}.")
+        if not any(c in mapa_cliente for c in _COLS_NOMBRE_TIENDA):
+            raise RuntimeError(f"No se encontró ninguna columna de nombre de tienda "
+                               f"({' / '.join(_COLS_NOMBRE_TIENDA)}) en el Maestro.\n"
+                               f"Encabezados detectados en fila {fila_enc_cliente}.")
+
+        datos_cliente: dict[str, dict[str, str]] = {}
+        col_branch = mapa_cliente["STORECHECK ID"]
+        for fila in ws_cliente.iter_rows(min_row=fila_enc_cliente + 1, values_only=True):
+            branch_raw = fila[col_branch - 1]
+            if branch_raw is None:
+                continue
+            branch_id = _normalizar(branch_raw)
+            if not branch_id:
+                continue
+            datos_cliente[branch_id] = {
+                col: _normalizar(fila[idx - 1])
+                for col, idx in mapa_cliente.items()
+            }
+
+        return datos_cliente, hoja_cliente, fila_enc_cliente, col_branch
+    finally:
+        wb_cliente.close()
+
+
+def _fusionar_maestros(principal: dict[str, dict[str, str]], secundario: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+    """Fusiona dos maestros dando prioridad al primero cuando una columna se repite."""
+    fusionado = {branch_id: dict(datos) for branch_id, datos in principal.items()}
+    for branch_id, datos_extra in secundario.items():
+        if branch_id not in fusionado:
+            fusionado[branch_id] = dict(datos_extra)
+            continue
+
+        destino = fusionado[branch_id]
+        for col, valor in datos_extra.items():
+            if not destino.get(col) and valor:
+                destino[col] = valor
+    return fusionado
+
+
+def _activo_a_tags_estatus(valor_activo: int | None) -> str | None:
+    """Convierte 1/0 a ACTIVO/INACTIVO para la columna tags_ESTATUS."""
+    if valor_activo == 1:
+        return "ACTIVO"
+    if valor_activo == 0:
+        return "INACTIVO"
     return None
 
 
@@ -528,14 +668,16 @@ def _resolver_combinacion_mas_cercana(canal: str, cadena: str, formato: str, cat
 # ══════════════════════════════════════════════════════════════════════
 
 def actualizar_catalogo_lugares(
-        ruta_maestro: str,
+    ruta_maestro: str,
         ruta_layout_places: str,
-        carpeta_salida: str) -> bool:
+    carpeta_salida: str,
+    ruta_maestro_extra: str | None = None) -> bool:
     """
     Actualiza layout_places con los datos del Maestro de lugares.
 
     Args:
-        ruta_maestro:       Ruta al archivo Maestro de lugares (cliente).
+        ruta_maestro:       Ruta al archivo Maestro de lugares principal (cliente).
+        ruta_maestro_extra:  Ruta al segundo Maestro de lugares opcional.
         ruta_layout_places: Ruta al archivo layout_places (nuestro catálogo).
         carpeta_salida:     Carpeta donde se guardará el resultado.
 
@@ -546,87 +688,17 @@ def actualizar_catalogo_lugares(
     print("=" * 55)
     print("--- Actualizar Catálogo de Lugares ---")
     print("=" * 55)
-    print(f"  Maestro : {os.path.basename(ruta_maestro)}")
+    print(f"  Maestro 1: {os.path.basename(ruta_maestro)}")
+    if ruta_maestro_extra:
+        print(f"  Maestro 2: {os.path.basename(ruta_maestro_extra)}")
     print(f"  Catálogo: {os.path.basename(ruta_layout_places)}")
 
-    # ── 1. Cargar Maestro de lugares (cliente) ────────────────────────
-    try:
-        wb_cliente = openpyxl.load_workbook(ruta_maestro, read_only=True, data_only=True, keep_links=False)
-    except PermissionError:
-        raise RuntimeError("El Maestro de lugares está abierto en Excel. Ciérralo e intenta de nuevo.")
-    except Exception as exc:
-        raise RuntimeError(f"No se pudo abrir el Maestro de lugares: {exc}")
+    # ── 1. Cargar Maestro(s) de lugares (cliente) ────────────────────
+    datos_cliente, hoja_cliente, fila_enc_cliente, col_branch = _cargar_datos_maestro_lugares(ruta_maestro)
+    if ruta_maestro_extra:
+        datos_maestro_extra, _, _, _ = _cargar_datos_maestro_lugares(ruta_maestro_extra)
+        datos_cliente = _fusionar_maestros(datos_cliente, datos_maestro_extra)
 
-    hojas_cliente_norm = {
-        _normalizar_nombre_hoja(h): h for h in wb_cliente.sheetnames
-    }
-    hoja_cliente = None
-    for esperada in _HOJAS_CLIENTE:
-        esperada_norm = _normalizar_nombre_hoja(esperada)
-        if esperada_norm in hojas_cliente_norm:
-            hoja_cliente = hojas_cliente_norm[esperada_norm]
-            break
-    if hoja_cliente is None:
-        available = ", ".join(wb_cliente.sheetnames)
-        wb_cliente.close()
-        esperadas = " o ".join(f"'{h}'" for h in _HOJAS_CLIENTE)
-        raise RuntimeError(f"No se encontró ninguna hoja esperada ({esperadas}) "
-                           f"en el Maestro de lugares.\n"
-                           f"Hojas disponibles: {available}")
-    ws_cliente = wb_cliente[hoja_cliente]
-
-    # Detectar fila de encabezados en el archivo del cliente
-    fila_enc_cliente = _encontrar_fila_encabezados(ws_cliente, _COLS_CLIENTE)
-    print(f"  Fila de encabezados (Maestro): {fila_enc_cliente}")
-
-    mapa_cliente = _mapear_indices_alias(ws_cliente, fila_enc_cliente, {
-        "BRANCHID": ("BRANCHID", "CODIGO INTERNO", "CÓDIGO INTERNO"),
-        "NOMBRE DE LA TIENDA": ("NOMBRE DE LA TIENDA",),
-        "Nombre Lugar": ("Nombre Lugar", "NOMBRE LUGAR"),
-        "ESTADO": ("ESTADO",),
-        "CANAL": ("CANAL", "CANAL 1"),
-        "SUBCANAL": ("SUBCANAL", "CANAL II"),
-        "CADENA": ("CADENA",),
-        "FORMATO CLIENTE": ("FORMATO CLIENTE",),
-        "FORMATO": ("FORMATO",),
-        "AREA NIELSEN": ("AREA NIELSEN",),
-        "DETERMINANTE": ("DETERMINANTE",),
-        "CLIENTE SELL-IN (SAP)": ("CLIENTE SELL-IN (SAP)",),
-        "LATITUD": ("LATITUD",),
-        "LONGITUD": ("LONGITUD",),
-        "STATUS OPERACIONES": ("STATUS OPERACIONES",),
-        "Activo": ("Activo", "ACTIVO"),
-    })
-
-    # Verificar columnas mínimas requeridas
-    faltantes = [c for c in _COLS_CLIENTE_REQUERIDAS if c not in mapa_cliente]
-    if faltantes:
-        wb_cliente.close()
-        raise RuntimeError(f"Columnas no encontradas en Maestro de lugares: {faltantes}\n"
-                           f"Encabezados detectados en fila {fila_enc_cliente}.")
-    if not any(c in mapa_cliente for c in _COLS_NOMBRE_TIENDA):
-        wb_cliente.close()
-        raise RuntimeError(f"No se encontró ninguna columna de nombre de tienda "
-                           f"({' / '.join(_COLS_NOMBRE_TIENDA)}) en el Maestro.\n"
-                           f"Encabezados detectados en fila {fila_enc_cliente}.")
-
-    # Construir diccionario BRANCHID → {col_cliente: valor_str}
-    datos_cliente: dict[str, dict[str, str]] = {}
-    col_branch = mapa_cliente["BRANCHID"]
-
-    for fila in ws_cliente.iter_rows(min_row=fila_enc_cliente + 1, values_only=True):
-        branch_raw = fila[col_branch - 1]
-        if branch_raw is None:
-            continue
-        branch_id = _normalizar(branch_raw)
-        if not branch_id:
-            continue
-        datos_cliente[branch_id] = {
-            col: _normalizar(fila[idx - 1])
-            for col, idx in mapa_cliente.items()
-        }
-
-    wb_cliente.close()
     print(f"  Registros en Maestro: {len(datos_cliente)}")
 
     # ── 2. Copiar layout_places a la carpeta de salida ────────────────
@@ -673,23 +745,7 @@ def actualizar_catalogo_lugares(
         if val is not None:
             codigos_catalogo.add(_normalizar(val))
 
-    # Reabrir Maestro para extraer filas completas de los que faltan
-    wb_cliente2 = openpyxl.load_workbook(ruta_maestro, read_only=True, data_only=True, keep_links=False)
-    ws_cliente2 = wb_cliente2[hoja_cliente]
-
-    faltantes_maestro: list[str] = []
-    for idx_fila, fila in enumerate(
-            ws_cliente2.iter_rows(min_row=fila_enc_cliente, values_only=True), start=fila_enc_cliente):
-        if idx_fila == fila_enc_cliente:
-            continue
-        branch_raw = fila[col_branch - 1]
-        if branch_raw is None:
-            continue
-        branch_id = _normalizar(branch_raw)
-        if branch_id and branch_id not in codigos_catalogo:
-            faltantes_maestro.append(branch_id)
-
-    wb_cliente2.close()
+    faltantes_maestro = [branch_id for branch_id in datos_cliente if branch_id not in codigos_catalogo]
 
     if faltantes_maestro:
         ruta_faltantes = os.path.join(carpeta_salida, "codigos_no_encontrados_en_catalogo.xlsx")
@@ -743,13 +799,24 @@ def actualizar_catalogo_lugares(
                 if valor:
                     ws_falt.cell(row=fila_destino, column=mapa_sistema[col_sis]).value = valor
 
-            # Activo para ADD: STATUS OPERACIONES / Activo -> 1/0
-            if "Activo" in mapa_sistema:
+            # RUTA: descomponer en tags_CANAL / tags_REGION / tags_SUBREGION / tags_RUTA
+            ruta_descompuesta = _descomponer_ruta(datos.get("RUTA", ""))
+            for col_sis, valor in ruta_descompuesta.items():
+                if col_sis in mapa_sistema:
+                    ws_falt.cell(row=fila_destino, column=mapa_sistema[col_sis]).value = valor
+
+            # Activo/tags_ESTATUS para ADD: STATUS OPERACIONES / Activo -> 1/0 y ACTIVO/INACTIVO
+            if "Activo" in mapa_sistema or "tags_ESTATUS" in mapa_sistema:
                 nuevo_activo = _normalizar_activo(
                     datos.get("STATUS OPERACIONES") or datos.get("Activo", "")
                 )
                 if nuevo_activo is not None:
-                    ws_falt.cell(row=fila_destino, column=mapa_sistema["Activo"]).value = nuevo_activo
+                    if "Activo" in mapa_sistema:
+                        ws_falt.cell(row=fila_destino, column=mapa_sistema["Activo"]).value = nuevo_activo
+                    if "tags_ESTATUS" in mapa_sistema:
+                        ws_falt.cell(row=fila_destino, column=mapa_sistema["tags_ESTATUS"]).value = (
+                            _activo_a_tags_estatus(nuevo_activo)
+                        )
 
             # Ajustar combinación Canal/Cadena/Formato contra catálogo válido de la plantilla
             if all(c in mapa_sistema for c in ("Canal", "Cadena", "Formato")):
@@ -770,7 +837,7 @@ def actualizar_catalogo_lugares(
                         ws_falt.cell(row=fila_destino, column=mapa_sistema["Formato"]).value = combo["formato"]
                         ajustes_combinacion += 1
 
-            # Nombre canónico usando la Cadena final de la fila ADD
+            # Nombre canónico usando la Cadena + Nombre Tienda (fila ADD)
             if "Nombre Lugar" in mapa_sistema:
                 nombre_tienda_nuevo = datos.get("NOMBRE DE LA TIENDA") or datos.get("Nombre Lugar", "")
                 cadena = ""
@@ -778,7 +845,7 @@ def actualizar_catalogo_lugares(
                     cadena = _normalizar(ws_falt.cell(row=fila_destino, column=mapa_sistema["Cadena"]).value)
                 if nombre_tienda_nuevo:
                     nombre_tienda_limpio = _quitar_siglas_cadena(nombre_tienda_nuevo, cadena)
-                    partes = [p for p in [branch_id, cadena, nombre_tienda_limpio] if p]
+                    partes = [p for p in [cadena, nombre_tienda_limpio] if p]
                     nombre_nuevo = _eliminar_duplicados_consecutivos(" ".join(partes))
                     nombre_nuevo = " ".join(nombre_nuevo.split())
                     if len(nombre_nuevo) > 60:
@@ -855,8 +922,20 @@ def actualizar_catalogo_lugares(
 
                 fila_modificada = True
 
+        # ── Actualizar tags derivados de RUTA ───────────────────────────
+        ruta_descompuesta = _descomponer_ruta(datos.get("RUTA", ""))
+        for col_sis, nuevo_val_str in ruta_descompuesta.items():
+            if col_sis not in mapa_sistema:
+                continue
+            cell = fila_cells[mapa_sistema[col_sis] - 1]
+            actual_str = _normalizar(cell.value)
+            if nuevo_val_str == actual_str:
+                continue
+            cell.value = nuevo_val_str
+            fila_modificada = True
+
         # ── Actualizar Nombre Lugar (lógica especial) ────────────────────
-        # El nombre canónico es: Código Interno + Cadena (del catálogo) + Nombre Tienda (del Maestro)
+        # El nombre canónico es: Cadena (del catálogo) + Nombre Tienda (del Maestro)
         # La Cadena se toma siempre del catálogo para no usar el valor incorrecto del Maestro.
         # El maestro puede traer el nombre en "NOMBRE DE LA TIENDA" o en "Nombre Lugar".
         nombre_tienda_nuevo = datos.get("NOMBRE DE LA TIENDA") or datos.get("Nombre Lugar", "")
@@ -867,7 +946,7 @@ def actualizar_catalogo_lugares(
             # Quitar siglas de la cadena si el maestro las incrustó en el nombre
             # Ej: 'FA JOSEFA' con cadena 'FARMACIAS DEL AHORRO' → 'JOSEFA'
             nombre_tienda_limpio = _quitar_siglas_cadena(nombre_tienda_nuevo, cadena)
-            partes = [p for p in [codigo_str, cadena, nombre_tienda_limpio] if p]
+            partes = [p for p in [cadena, nombre_tienda_limpio] if p]
             nombre_nuevo = _eliminar_duplicados_consecutivos(" ".join(partes))
             nombre_nuevo = " ".join(nombre_nuevo.split())  # limpiar espacios dobles
             if len(nombre_nuevo) > 60:
@@ -880,17 +959,26 @@ def actualizar_catalogo_lugares(
                 cell_nombre.value = nombre_nuevo
                 fila_modificada = True
 
-        # ── Actualizar Activo ────────────────────────────────────────────
+        # ── Actualizar Activo/tags_ESTATUS ───────────────────────────────
         # El maestro puede tener la columna "STATUS OPERACIONES" o "Activo".
         # Valores aceptados: ACTIVO → 1, INACTIVO → 0, 1 → 1, 0 → 0.
-        if "Activo" in mapa_sistema:
+        # tags_ESTATUS guarda la representación en texto: ACTIVO/INACTIVO.
+        if "Activo" in mapa_sistema or "tags_ESTATUS" in mapa_sistema:
             estado_raw = datos.get("STATUS OPERACIONES") or datos.get("Activo", "")
             nuevo_activo = _normalizar_activo(estado_raw)
             if nuevo_activo is not None:
-                cell_activo = fila_cells[mapa_sistema["Activo"] - 1]
-                if _normalizar(nuevo_activo) != _normalizar(cell_activo.value):
-                    cell_activo.value = nuevo_activo
-                    fila_modificada = True
+                if "Activo" in mapa_sistema:
+                    cell_activo = fila_cells[mapa_sistema["Activo"] - 1]
+                    if _normalizar(nuevo_activo) != _normalizar(cell_activo.value):
+                        cell_activo.value = nuevo_activo
+                        fila_modificada = True
+
+                if "tags_ESTATUS" in mapa_sistema:
+                    nuevo_estatus_txt = _activo_a_tags_estatus(nuevo_activo)
+                    cell_estatus = fila_cells[mapa_sistema["tags_ESTATUS"] - 1]
+                    if _normalizar(nuevo_estatus_txt) != _normalizar(cell_estatus.value):
+                        cell_estatus.value = nuevo_estatus_txt
+                        fila_modificada = True
 
         if fila_modificada:
             fila_cells[col_accion - 1].value = "UPDATE"
@@ -948,9 +1036,8 @@ def actualizar_catalogo_lugares(
             print(f"    Parte {i + 1}/{num_partes}: {len(chunk):,} registros "
                   f"→ {os.path.basename(ruta_p)}")
 
-        # Eliminar el archivo unificado; queda reemplazado por las partes
-        os.remove(ruta_salida)
         print(f"  División completada: {num_partes} archivos generados.")
+        print(f"  Archivo unificado conservado: {os.path.basename(ruta_salida)}")
 
     return True
 

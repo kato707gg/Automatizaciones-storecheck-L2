@@ -22,7 +22,7 @@ def catalogacion_solo_por_formato(ruta_matriz, ruta_base, carpeta_trabajo):
     
     # Verificar que el archivo matriz existe
     if not os.path.exists(ruta_matriz):
-        print(f"  ✗ ERROR: No se encontró el archivo matriz: {ruta_matriz}")
+        print(f"  [ERROR] ERROR: No se encontró el archivo matriz: {ruta_matriz}")
         return False
     
     # Buscar archivo layout_format_scope_188865 en la carpeta base
@@ -33,7 +33,7 @@ def catalogacion_solo_por_formato(ruta_matriz, ruta_base, carpeta_trabajo):
             break
     
     if not archivo_plantilla or not os.path.exists(archivo_plantilla):
-        print(f"  ✗ ERROR: No se encontró layout_format_scope_188865.xlsx en {ruta_base}")
+        print(f"  [ERROR] ERROR: No se encontró layout_format_scope_188865.xlsx en {ruta_base}")
         return False
     
     print(f"  Archivo matriz: {os.path.basename(ruta_matriz)}")
@@ -56,7 +56,7 @@ def catalogacion_solo_por_formato(ruta_matriz, ruta_base, carpeta_trabajo):
         wb_matriz = openpyxl.load_workbook(ruta_matriz, data_only=True, read_only=True)
         
         if nombre_hoja not in wb_matriz.sheetnames:
-            print(f"  ✗ ERROR: No se encontró la hoja '{nombre_hoja}'")
+            print(f"  [ERROR] ERROR: No se encontró la hoja '{nombre_hoja}'")
             wb_matriz.close()
             return False
         
@@ -167,8 +167,7 @@ def catalogacion_solo_por_formato(ruta_matriz, ruta_base, carpeta_trabajo):
         print(f"  Registros a escribir: {len(datos_salida)}")
         
         if not datos_salida:
-            print("  ! No hay datos para escribir")
-            return True
+            print("  ! No hay datos para escribir; se guardará la plantilla vacía con su estructura final")
         
         # Abrir archivo plantilla (sin modificar el original)
         print(f"\n  Abriendo plantilla: {os.path.basename(archivo_plantilla)}")
@@ -176,7 +175,7 @@ def catalogacion_solo_por_formato(ruta_matriz, ruta_base, carpeta_trabajo):
         
         hoja_destino = "ProductosCatalogados_Formato"
         if hoja_destino not in wb_plantilla.sheetnames:
-            print(f"  ✗ ERROR: No se encontró la hoja '{hoja_destino}'")
+            print(f"  [ERROR] ERROR: No se encontró la hoja '{hoja_destino}'")
             wb_plantilla.close()
             return False
         
@@ -236,11 +235,8 @@ def catalogacion_solo_por_formato(ruta_matriz, ruta_base, carpeta_trabajo):
             # Columna E: Fecha de mañana (escribir como fecha con formato dd/mm/aaaa)
             celda_e = ws_destino.cell(row=fila_actual, column=5)
             celda_e.value = fecha_date
-            aplicar_estilo(celda_e, estilos_fila2.get(5))
-            try:
-                celda_e.number_format = "dd/mm/yyyy"
-            except Exception:
-                pass
+            aplicar_estilo(celda_e, estilos_fila2.get(5))   # Primero estilos generales
+            celda_e.number_format = "dd/mm/yyyy"    
             
             # Columna F: "INSERT"
             celda_f = ws_destino.cell(row=fila_actual, column=6)
@@ -252,7 +248,7 @@ def catalogacion_solo_por_formato(ruta_matriz, ruta_base, carpeta_trabajo):
         # Guardar archivo con nombre nuevo (preservar la plantilla original intacta)
         wb_plantilla.save(ruta_archivo_salida)
         wb_plantilla.close()
-        print(f"  ✓ Archivo catalogado guardado en subcarpeta: {nombre_archivo_salida}")
+        print(f"  [OK] Archivo catalogado guardado en subcarpeta: {nombre_archivo_salida}")
         print(f"    (La plantilla original se mantiene intacta y no se escribe en la carpeta base)")
         
         print(f"\n  ¡Catalogación por formato completada!")
@@ -261,7 +257,7 @@ def catalogacion_solo_por_formato(ruta_matriz, ruta_base, carpeta_trabajo):
         return True
         
     except Exception as e:
-        print(f"  ✗ ERROR al procesar: {e}")
+        print(f"  [ERROR] ERROR al procesar: {e}")
         import traceback
         traceback.print_exc()
         return False

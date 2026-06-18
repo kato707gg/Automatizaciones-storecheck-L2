@@ -24,6 +24,60 @@ from .producto_general import procesar_producto_general
 
 
 # ---------------------------------------------------------------------------
+# FUNCIÓN DE DEBUG PARA INSPECCIONAR COLUMNAS
+# ---------------------------------------------------------------------------
+
+def _debug_dump_config_columnas(ws_config, nombre_paso, col_desde=11, col_hasta=200):
+    """Imprime el estado de las columnas de CONFIG para debug.
+    
+    Muestra fila 2 (marcadores) y filas 4-6 (datos de productos) 
+    para identificar dónde aparecen columnas vacías.
+    """
+    print(f"\n[DEBUG] {nombre_paso}")
+    print(f"        Columnas {col_desde} ({get_column_letter(col_desde)}) a {col_hasta} ({get_column_letter(col_hasta)})")
+    print(f"        {'Col':<4} {'Letter':<5} {'Fila2':<25} {'Fila4':<15} {'Fila5':<15} {'Fila6':<15}")
+    print("        " + "-" * 85)
+    
+    empty_count = 0
+    last_non_empty_col = None
+    
+    for col_idx in range(col_desde, min(col_hasta + 1, ws_config.max_column + 1)):
+        val2 = ws_config.cell(row=2, column=col_idx).value
+        val4 = ws_config.cell(row=4, column=col_idx).value
+        val5 = ws_config.cell(row=5, column=col_idx).value
+        val6 = ws_config.cell(row=6, column=col_idx).value
+        
+        # Abreviar valores largos
+        def trunc(v, length=20):
+            if v is None:
+                return "<empty>"
+            s = str(v)[:length]
+            if len(str(v)) > length:
+                s = s + "..."
+            return s
+        
+        v2_str = trunc(val2, 23)
+        v4_str = trunc(val4, 13)
+        v5_str = trunc(val5, 13)
+        v6_str = trunc(val6, 13)
+        
+        is_empty_col = all(v is None for v in [val2, val4, val5, val6])
+        marker = "***EMPTY***" if is_empty_col else ""
+        
+        print(f"        {col_idx:<4} {get_column_letter(col_idx):<5} {v2_str:<25} {v4_str:<15} {v5_str:<15} {v6_str:<15} {marker}")
+        
+        if is_empty_col:
+            empty_count += 1
+        else:
+            last_non_empty_col = col_idx
+    
+    print(f"        Columnas vacías encontradas: {empty_count}")
+    if last_non_empty_col:
+        print(f"        Última columna con datos: {last_non_empty_col} ({get_column_letter(last_non_empty_col)})")
+    print()
+
+
+# ---------------------------------------------------------------------------
 # Utilidades de carga rápida
 # ---------------------------------------------------------------------------
 
@@ -57,7 +111,7 @@ def _gv(rows, row_1based, col_1based):
 def copiar_hoja(wb, nombre_origen, nombre_destino):
     """Copia una hoja del libro de Excel."""
     if nombre_origen not in wb.sheetnames:
-        print(f"  ✗ ERROR: No se encontró la hoja '{nombre_origen}'")
+        print(f"  [ERROR] ERROR: No se encontró la hoja '{nombre_origen}'")
         return False
     
     # Verificar si ya existe la hoja destino
@@ -70,7 +124,7 @@ def copiar_hoja(wb, nombre_origen, nombre_destino):
     hoja_copia = wb.copy_worksheet(hoja_origen)
     hoja_copia.title = nombre_destino
     
-    print(f"  ✓ Hoja copiada: '{nombre_origen}' -> '{nombre_destino}'")
+    print(f"  [OK] Hoja copiada: '{nombre_origen}' -> '{nombre_destino}'")
     return True
 
 
@@ -81,7 +135,7 @@ def crear_hoja(wb, nombre_hoja):
         return wb[nombre_hoja]
     
     nueva_hoja = wb.create_sheet(title=nombre_hoja)
-    print(f"  ✓ Hoja creada: '{nombre_hoja}'")
+    print(f"  [OK] Hoja creada: '{nombre_hoja}'")
     return nueva_hoja
 
 
@@ -90,7 +144,7 @@ def limpiar_hoja(ws):
     for fila in ws.iter_rows():
         for celda in fila:
             celda.value = None
-    print(f"  ✓ Contenido limpiado en hoja '{ws.title}'")
+    print(f"  [OK] Contenido limpiado en hoja '{ws.title}'")
 
 
 def copiar_celda_con_estilo(src_cell, dst_cell):
@@ -122,7 +176,188 @@ def normalizar_columna_c_productos(ws, fila_inicio):
             celda.value = texto
             celda.number_format = "@"
         celdas += 1
-    print(f"  ✓ Columna C normalizada (texto a número si aplica) desde fila {fila_inicio} ({celdas} celdas)")
+    print(f"  [OK] Columna C normalizada (texto a número si aplica) desde fila {fila_inicio} ({celdas} celdas)")
+
+
+def _normalizar_texto(texto):
+    return " ".join(str(texto).strip().lower().split())
+
+
+def _buscar_columna_por_texto(ws, col_inicio, texto_objetivo, filas=(2, 4)):
+    objetivo = _normalizar_texto(texto_objetivo)
+    for col in range(col_inicio, ws.max_column + 1):
+        for fila in filas:
+            val = ws.cell(row=fila, column=col).value
+            if val is None:
+                continue
+            if objetivo in _normalizar_texto(val):
+                return col
+    return None
+
+
+def _mover_columna(ws, col_origen, col_destino):
+    if col_origen == col_destino:
+        return
+
+    max_row = ws.max_row
+    col_data = []
+    for row in range(1, max_row + 1):
+        cell = ws.cell(row=row, column=col_origen)
+        col_data.append(
+            (cell.value, copy(cell._style), cell.number_format, cell.data_type, cell.hyperlink, cell.comment)
+        )
+
+    src_letter = get_column_letter(col_origen)
+    src_dim = ws.column_dimensions.get(src_letter)
+    dim_copy = copy(src_dim) if src_dim is not None else None
+
+    ws.delete_cols(col_origen, 1)
+
+    ws.insert_cols(col_destino, 1)
+
+    for row, (value, style, number_format, data_type, hyperlink, comment) in enumerate(col_data, start=1):
+        cell = ws.cell(row=row, column=col_destino)
+        cell.value = value
+        try:
+            cell._style = copy(style)
+        except Exception:
+            pass
+        cell.number_format = number_format
+        cell.data_type = data_type
+        if hyperlink is not None:
+            cell.hyperlink = hyperlink
+        if comment is not None:
+            cell.comment = comment
+
+    if dim_copy is not None:
+        dest_letter = get_column_letter(col_destino)
+        ws.column_dimensions[dest_letter] = copy(dim_copy)
+
+
+def eliminar_columnas_extras_dinamico(ws, col_inicio):
+    """Elimina la columna inmediatamente posterior a Fifteen Pack Mora Azul 355ml.
+
+    Esa columna sobra en la hoja PRODUCTOS y desplaza el resto de grupos.
+    La regla es fija y se aplica antes de cualquier otro procesamiento.
+    """
+    print("  Eliminando columna siguiente a Electrolit Fifteen Pack Mora Azul 355ml...")
+
+    # IMPORTANTE: no eliminar columnas aquí.
+    #
+    # Estas columnas se usan para mantener alineados los headers de PRODUCTOS
+    # con las columnas de datos (filas 5+) en CONFIGURACIÓN DE ANAQUEL.
+    # Si se elimina una columna en PRODUCTOS sin desplazar también el bloque de
+    # datos base, los conteos de 1 se recorren (ej. UVA -> NARANJA).
+    print("    [OK] Se omite eliminación para conservar alineación con CONFIG")
+    return
+
+
+def reordenar_polvo_antes_de_aqualit_productos(ws, col_inicio):
+    """Mueve columnas de Polvo que estén a la derecha de Aqualit, dejándolas antes de Aqualit.
+
+    Esto evita que Aqualit quede entre productos de Electrolife Zero Polvo.
+    """
+    col_aqualit = _buscar_columna_por_texto(ws, col_inicio, "aqualit", filas=(4, 5, 6))
+    if col_aqualit is None:
+        print("  [OK] No se encontró Aqualit en PRODUCTOS para reordenar")
+        return False
+
+    moved = 0
+    col = col_aqualit + 1
+    while col <= ws.max_column:
+        textos = []
+        for fila in (4, 5, 6):
+            val = ws.cell(row=fila, column=col).value
+            if val is not None:
+                textos.append(str(val).strip().lower())
+
+        es_polvo = any("electrolife zero polvo" in t for t in textos)
+        if es_polvo:
+            origen = col
+            destino = col_aqualit
+            _mover_columna(ws, origen, destino)
+            moved += 1
+            col_aqualit += 1
+            col += 1
+            continue
+
+        col += 1
+
+    if moved:
+        print(f"  [OK] Reordenadas {moved} columna(s) de Polvo antes de Aqualit en PRODUCTOS")
+        return True
+
+    print("  [OK] No hubo columnas de Polvo a la derecha de Aqualit")
+    return False
+
+
+def reubicar_aqualit_junto_competencia(ws, col_inicio):
+    col_aqualit = _buscar_columna_por_texto(ws, col_inicio, "aqualit")
+    col_comp = _buscar_columna_por_texto(ws, col_inicio, "competencia")
+
+    if col_aqualit is None or col_comp is None:
+        print("  ! No se pudo reubicar Aqualit: no se detectó Aqualit o Competencia")
+        return False
+
+    if col_aqualit == col_comp - 1:
+        print("  [OK] Aqualit ya está junto a Competencia")
+        return True
+
+    insert_before = col_comp if col_aqualit > col_comp else col_comp - 1
+    print(
+        f"  Reubicando Aqualit: {get_column_letter(col_aqualit)} -> {get_column_letter(insert_before)} (junto a Competencia {get_column_letter(col_comp)})"
+    )
+    _mover_columna(ws, col_aqualit, insert_before)
+    return True
+
+
+def restaurar_aqualit_desde_respaldo(wb):
+    """Restaura los valores de Aqualit en CONFIG desde CONFIGURACIÓN DE ANAQUEL 1.
+
+    Se usa para evitar que Aqualit quede vacío por corrimientos intermedios.
+    Busca columnas por ID 3235 y, como respaldo, por texto con 'aqualit'.
+    """
+    nombre_cfg = "CONFIGURACIÓN DE ANAQUEL"
+    nombre_bak = "CONFIGURACIÓN DE ANAQUEL 1"
+
+    if nombre_cfg not in wb.sheetnames or nombre_bak not in wb.sheetnames:
+        return
+
+    ws_cfg = wb[nombre_cfg]
+    ws_bak = wb[nombre_bak]
+    col_inicio = column_index_from_string("K")
+
+    def _es_aqualit_col(ws, col):
+        v_id = ws.cell(row=3, column=col).value
+        if str(v_id).strip() == "3235":
+            return True
+        for fila in (2, 4):
+            v = ws.cell(row=fila, column=col).value
+            if v is not None and "aqualit" in _normalizar_texto(v):
+                return True
+        return False
+
+    src_cols = [c for c in range(col_inicio, ws_bak.max_column + 1) if _es_aqualit_col(ws_bak, c)]
+    dst_cols = [c for c in range(col_inicio, ws_cfg.max_column + 1) if _es_aqualit_col(ws_cfg, c)]
+
+    if not src_cols or not dst_cols:
+        print("  ! No se pudo restaurar Aqualit: columna origen/destino no detectada")
+        return
+
+    src_col = src_cols[0]
+    filas = ws_bak.max_row
+    celdas_copiadas = 0
+
+    for dst_col in dst_cols:
+        for fila in range(5, filas + 1):
+            ws_cfg.cell(row=fila, column=dst_col).value = ws_bak.cell(row=fila, column=src_col).value
+            celdas_copiadas += 1
+
+    print(
+        f"  [OK] Aqualit restaurado desde respaldo: "
+        f"{get_column_letter(src_col)} -> {', '.join(get_column_letter(c) for c in dst_cols)} "
+        f"({celdas_copiadas} celdas)"
+    )
 
 
 def copiar_configuracion_anaquel(wb):
@@ -130,10 +365,10 @@ def copiar_configuracion_anaquel(wb):
     print("\n--- Copiando CONFIGURACIÓN DE ANAQUEL 1 a PRODUCTOS ---")
 
     if "CONFIGURACIÓN DE ANAQUEL 1" not in wb.sheetnames:
-        print("  ✗ ERROR: No existe la hoja 'CONFIGURACIÓN DE ANAQUEL 1'.")
+        print("  [ERROR] ERROR: No existe la hoja 'CONFIGURACIÓN DE ANAQUEL 1'.")
         return False, 0, 0
     if "PRODUCTOS" not in wb.sheetnames:
-        print("  ✗ ERROR: No existe la hoja 'PRODUCTOS' en el archivo destino.")
+        print("  [ERROR] ERROR: No existe la hoja 'PRODUCTOS' en el archivo destino.")
         return False, 0, 0
 
     ws_src = wb["CONFIGURACIÓN DE ANAQUEL 1"]
@@ -178,8 +413,8 @@ def copiar_configuracion_anaquel(wb):
     except Exception:
         pass
 
-    print(f"  ✓ Copiado rango G2:{get_column_letter(max_col)}4 -> PRODUCTOS!E1 con ancho {ancho} columnas")
-    print("  ✓ Fila 1 replicada en fila 4 en columnas E en adelante")
+    print(f"  [OK] Copiado rango G2:{get_column_letter(max_col)}4 -> PRODUCTOS!E1 con ancho {ancho} columnas")
+    print("  [OK] Fila 1 replicada en fila 4 en columnas E en adelante")
     return True, ancho, col_dest_inicio
 
 
@@ -188,17 +423,17 @@ def copiar_productos(ruta_layout, wb_destino):
     print("\n--- Copiando productos ---")
 
     if "PRODUCTOS" not in wb_destino.sheetnames:
-        print("  ✗ ERROR: No existe la hoja 'PRODUCTOS' en el archivo destino.")
+        print("  [ERROR] ERROR: No existe la hoja 'PRODUCTOS' en el archivo destino.")
         return False, 0
 
     if not os.path.exists(ruta_layout):
-        print(f"  ✗ ERROR: No se encontró el layout de productos: {ruta_layout}")
+        print(f"  [ERROR] ERROR: No se encontró el layout de productos: {ruta_layout}")
         return False, 0
 
     wb_layout = openpyxl.load_workbook(ruta_layout, data_only=True, read_only=True)
 
     if "Productos" not in wb_layout.sheetnames:
-        print("  ✗ ERROR: No se encontró la hoja 'Productos' en layout_products.")
+        print("  [ERROR] ERROR: No se encontró la hoja 'Productos' en layout_products.")
         wb_layout.close()
         return False, 0
 
@@ -251,7 +486,7 @@ def copiar_productos(ruta_layout, wb_destino):
     # Dar formato a encabezados A7:C7
     aplicar_formato_encabezados_productos(ws_dst)
 
-    print(f"  ✓ Filas copiadas: {filas_copiadas}")
+    print(f"  [OK] Filas copiadas: {filas_copiadas}")
     return True, filas_copiadas
 
 
@@ -356,18 +591,39 @@ def eliminar_columnas_dinamico(ws, col_inicio):
     for col in sorted(to_delete, reverse=True):
         ws.delete_cols(col)
 
-    print(f"  ✓ Eliminadas {len(to_delete)} columnas en total")
+    print(f"  [OK] Eliminadas {len(to_delete)} columnas en total")
     if cols_300ml:
         print(f"      300ml (+extra): {[get_column_letter(c) for c in sorted(cols_300ml)]}")
     if cols_total:
         print(f"      Total (competencia): {[get_column_letter(c) for c in sorted(cols_total)]}")
 
 def establecer_formulas_id_nombre(ws, col_inicio):
-    """Escribe fórmulas de filas 5 (ID) y 6 (Nombre) en columnas con código en fila 2."""
+    """Copia ID/nombre para columnas base y respeta productos insertados manualmente.
+
+        Reglas:
+        - Si hay ID en fila 2: fila 5 toma ese ID y fila 6 usa XLOOKUP por ID.
+        - Si NO hay ID en fila 2: no se toca la columna (modo no destructivo).
+    """
     fila_id = 5
     fila_nombre = 6
 
-    # Detectar última columna con datos en filas 1-3 (sin depender de ancho externo)
+    # Fallback por SKU (fila 3): C -> (A, B) desde catálogo interno de PRODUCTOS.
+    map_sku_ab = {}
+    for fila in range(8, min(ws.max_row + 1, 1001)):
+        val_a = ws.cell(row=fila, column=1).value  # ID
+        val_b = ws.cell(row=fila, column=2).value  # Nombre
+        val_c = ws.cell(row=fila, column=3).value  # SKU
+        if val_c in (None, ""):
+            continue
+        key = str(val_c).strip()
+        map_sku_ab[key] = (val_a, val_b)
+        try:
+            key_num = str(int(float(key)))
+            map_sku_ab[key_num] = (val_a, val_b)
+        except (ValueError, TypeError):
+            pass
+
+    # Detectar ultima columna con datos en filas 1-3 (sin depender de ancho externo)
     ultima_col = col_inicio
     for col in range(col_inicio, ws.max_column + 1):
         for fila in (1, 2, 3):
@@ -376,19 +632,57 @@ def establecer_formulas_id_nombre(ws, col_inicio):
                 ultima_col = col
                 break
 
+    cols_formula = 0
+    cols_preservadas = 0
+    cols_recuperadas_sku = 0
+
     for col_idx in range(col_inicio, ultima_col + 1):
         col_letter = get_column_letter(col_idx)
+        id_fuente = ws.cell(row=2, column=col_idx).value
 
         celda_id = ws.cell(row=fila_id, column=col_idx)
-        if celda_id.value is None:
-            celda_id.value = f"=_xlfn.XLOOKUP({col_letter}2,$C$8:$C$1000,$A$8:$A$1000)"
+        id_existente = celda_id.value
 
         celda_nombre = ws.cell(row=fila_nombre, column=col_idx)
-        if celda_nombre.value is None:
-            celda_nombre.value = f"=_xlfn.XLOOKUP({col_letter}2,$C$8:$C$1000,$B$8:$B$1000)"
+        nombre_existente = celda_nombre.value
+
+        # Caso base: columna del layout con ID en fila 2.
+        if id_fuente not in (None, ""):
+            celda_id.value = id_fuente
+            celda_nombre.value = f"=_xlfn.XLOOKUP({col_letter}2,$A$8:$A$1000,$B$8:$B$1000)"
+            cols_formula += 1
+            continue
+
+        # Columna sin ID fuente.
+        # 1) Si está vacía en fila 5/6, intentar recuperar por SKU de fila 3.
+        # 2) Si no se puede, conservar sin cambios (modo no destructivo).
+        sku_fuente = ws.cell(row=3, column=col_idx).value
+        sku_key = str(sku_fuente).strip() if sku_fuente not in (None, "") else None
+        if sku_key and id_existente in (None, "") and nombre_existente in (None, ""):
+            datos = map_sku_ab.get(sku_key)
+            if datos is None:
+                try:
+                    datos = map_sku_ab.get(str(int(float(sku_key))))
+                except (ValueError, TypeError):
+                    datos = None
+            if datos is not None:
+                celda_id.value = datos[0]
+                celda_nombre.value = datos[1]
+                cols_recuperadas_sku += 1
+                continue
+
+        # Sin recuperación posible: conservar tal cual.
+        cols_preservadas += 1
+        continue
+
+    print(
+        f"  [OK] Fila 5/6 actualizada: {cols_formula} con formula, "
+        f"{cols_recuperadas_sku} recuperadas por SKU, "
+        f"{cols_preservadas} preservadas sin cambios"
+    )
 
 
-def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base):
+def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base, ruta_matriz=None):
     """Lee 'Productos de Sams' y coloca los productos dinámicamente:
       · Generales     → trailing empties de cada grupo (asignación global Jaccard)
       · Sobrantes     → después de todos los grupos
@@ -400,17 +694,37 @@ def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base):
     print("\n--- Llenando espacios vacíos con Productos de Sams ---")
 
     # ── Localizar archivo ────────────────────────────────────────────────────────
+    import unicodedata
+
+    def _norm_filename(s):
+        s = unicodedata.normalize("NFKD", str(s))
+        s = "".join(ch for ch in s if not unicodedata.combining(ch))
+        return " ".join(s.lower().replace("_", " ").replace("-", " ").split())
+
+    def _buscar_sams_en_dir(dir_path):
+        if not dir_path or not os.path.isdir(dir_path):
+            return None
+        for archivo in os.listdir(dir_path):
+            nombre_norm = _norm_filename(archivo)
+            if "productos de sams" in nombre_norm:
+                return os.path.join(dir_path, archivo)
+        return None
+
     archivo_sams = None
-    for archivo in os.listdir(ruta_base):
-        if "productos de sams" in archivo.lower():
-            archivo_sams = os.path.join(ruta_base, archivo)
+    carpetas_busqueda = [ruta_base]
+    if ruta_matriz:
+        carpetas_busqueda.append(os.path.dirname(ruta_matriz))
+
+    for carpeta in carpetas_busqueda:
+        archivo_sams = _buscar_sams_en_dir(carpeta)
+        if archivo_sams:
             break
 
     if not archivo_sams:
-        print("  ! No se encontró el archivo 'Productos de Sams', se omite este paso.")
+        print("  ! No se encontró el archivo 'Productos de Sams' (ni en ruta_base ni junto a la matriz), se omite este paso.")
         return
 
-    print(f"  ✓ Encontrado: {os.path.basename(archivo_sams)}")
+    print(f"  [OK] Encontrado: {os.path.basename(archivo_sams)}")
 
     # ── Leer todo el archivo en memoria ─────────────────────────────────────────
     wb_sams = openpyxl.load_workbook(archivo_sams, data_only=True, read_only=True)
@@ -468,9 +782,9 @@ def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base):
     productos_comp    = _extraer_pares(col_id_comp,   col_nom_comp)    if col_id_comp   is not None else []
     productos_sams_ef = _extraer_pares_sams(col_id_sams, col_nom_sams) if col_id_sams   is not None else []
 
-    print(f"  ✓ Productos normales:     {len(productos_normal)}")
-    print(f"  ✓ Productos competencia:  {len(productos_comp)}")
-    print(f"  ✓ Productos SAMS:         {len(productos_sams_ef)}")
+    print(f"  [OK] Productos normales:     {len(productos_normal)}")
+    print(f"  [OK] Productos competencia:  {len(productos_comp)}")
+    print(f"  [OK] Productos SAMS:         {len(productos_sams_ef)}")
 
     if not productos_normal and not productos_comp and not productos_sams_ef:
         print("  ! No se encontraron productos en ningún grupo.")
@@ -510,10 +824,10 @@ def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base):
         if (v1 is not None and str(v1).strip()) or (v2 is not None and str(v2).strip()):
             ultima_col_datos = col
 
-    print(f"  ✓ Grupos detectados en fila 1: {len(grupos)}")
+    print(f"  [OK] Grupos detectados en fila 1: {len(grupos)}")
     for gc, gn in grupos:
         print(f"      {get_column_letter(gc)}({gc}): {gn}")
-    print(f"  ✓ Última columna con datos: {get_column_letter(ultima_col_datos)} ({ultima_col_datos})")
+    print(f"  [OK] Última columna con datos: {get_column_letter(ultima_col_datos)} ({ultima_col_datos})")
 
     # ── Función de similitud Jaccard ─────────────────────────────────────────────
     def _jaccard(grupo_name, producto_name):
@@ -574,7 +888,7 @@ def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base):
             print(f"      {g_name}: {nom_p} → {get_column_letter(trailing[j])}")
 
     pool_restante = [p for i, p in enumerate(pool_normal) if i not in productos_usados]
-    print(f"  ✓ Productos generales colocados: {generales_colocados}")
+    print(f"  [OK] Productos generales colocados: {generales_colocados}")
 
     # ── Paso 2: Sobrantes normales + Competencia + SAMS → secuenciales ───────────
     col_siguiente = ultima_col_datos + 1
@@ -584,7 +898,7 @@ def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base):
             _escribir(5, col_siguiente, id_p)
             _escribir(6, col_siguiente, nom_p)
             col_siguiente += 1
-        print(f"  ✓ Generales sobrantes: {len(pool_restante)} → "
+        print(f"  [OK] Generales sobrantes: {len(pool_restante)} → "
               f"desde {get_column_letter(col_siguiente - len(pool_restante))}")
 
     if productos_comp:
@@ -594,7 +908,7 @@ def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base):
             _escribir(5, col_siguiente, id_p)
             _escribir(6, col_siguiente, nom_p)
             col_siguiente += 1
-        print(f"  ✓ Competencia: {len(productos_comp)} → desde {get_column_letter(col_comp)}")
+        print(f"  [OK] Competencia: {len(productos_comp)} → desde {get_column_letter(col_comp)}")
 
     if productos_sams_ef:
         col_sams = col_siguiente
@@ -603,7 +917,7 @@ def llenar_espacios_vacios_productos_sams(ws, col_inicio, ruta_base):
             _escribir(5, col_sams, id_val)
             _escribir(6, col_sams, nom_val)
             col_sams += 1
-        print(f"  ✓ SAMS: {len(productos_sams_ef)} → desde {get_column_letter(col_siguiente)}")
+        print(f"  [OK] SAMS: {len(productos_sams_ef)} → desde {get_column_letter(col_siguiente)}")
 
 
 def procesar_lugares(wb, ruta_layout_places, hojas_lp=None):
@@ -611,7 +925,7 @@ def procesar_lugares(wb, ruta_layout_places, hojas_lp=None):
     print("\n--- Procesando hoja LUGARES ---")
 
     if "LUGARES" not in wb.sheetnames:
-        print("  ✗ ERROR: No existe la hoja 'LUGARES'.")
+        print("  [ERROR] ERROR: No existe la hoja 'LUGARES'.")
         return False
 
     ws_lugares = wb["LUGARES"]
@@ -621,13 +935,13 @@ def procesar_lugares(wb, ruta_layout_places, hojas_lp=None):
         rows_layout = hojas_lp.get("Lugares", [])
     else:
         if not os.path.exists(ruta_layout_places):
-            print(f"  ✗ ERROR: No se encontró el layout de lugares: {ruta_layout_places}")
+            print(f"  [ERROR] ERROR: No se encontró el layout de lugares: {ruta_layout_places}")
             return False
         _tmp = _leer_wb_hojas(ruta_layout_places, "Lugares")
         rows_layout = _tmp.get("Lugares", [])
 
     if not rows_layout:
-        print("  ✗ ERROR: No se encontró la hoja 'Lugares' en layout_places.")
+        print("  [ERROR] ERROR: No se encontró la hoja 'Lugares' en layout_places.")
         return False
 
     # Copiar columnas A, B, F desde layout_places a LUGARES columnas A, B, C
@@ -665,8 +979,8 @@ def procesar_lugares(wb, ruta_layout_places, hojas_lp=None):
         fila_destino += 1
         filas_copiadas += 1
 
-    print(f"  ✓ Copiadas {filas_copiadas} filas de layout_places (cols A,B,F -> A,B,C)")
-    print("  ✓ Columna C convertida a número")
+    print(f"  [OK] Copiadas {filas_copiadas} filas de layout_places (cols A,B,F -> A,B,C)")
+    print("  [OK] Columna C convertida a número")
 
     # Copiar columnas D y E desde fila 4 de CONFIGURACIÓN DE ANAQUEL 1 a LUGARES D y E
     max_fila_de = 1
@@ -692,7 +1006,7 @@ def procesar_lugares(wb, ruta_layout_places, hojas_lp=None):
             filas_copiadas_config += 1
             max_fila_de = fila_dst
 
-        print(f"  ✓ Copiado columnas D,E de CONFIGURACIÓN DE ANAQUEL 1 (filas 4-{max_fila_config}) -> LUGARES D,E ({filas_copiadas_config} filas)")
+        print(f"  [OK] Copiado columnas D,E de CONFIGURACIÓN DE ANAQUEL 1 (filas 4-{max_fila_config}) -> LUGARES D,E ({filas_copiadas_config} filas)")
     else:
         print("  ! No se encontró CONFIGURACIÓN DE ANAQUEL 1 para copiar D y E")
 
@@ -732,17 +1046,18 @@ def procesar_lugares(wb, ruta_layout_places, hojas_lp=None):
         celda.alignment = align
         celda.border = border
 
-    print("  ✓ Encabezados con estilos aplicados (A-C verde, D-E amarillo, F-G azul)")
+    print("  [OK] Encabezados con estilos aplicados (A-C verde, D-E amarillo, F-G azul)")
 
-    # Agregar fórmulas BUSCARX desde fila 2 hasta la última fila con datos en columnas D y E
+    # Columna F: buscar ID a partir de D
+    # Columna G: buscar nombre a partir del ID de F
     ultima_fila = max_fila_de  # Usar la última fila de D y E
     for fila in range(2, ultima_fila + 1):
-        # F: =BUSCARX(D2, $C:$C, $A:$A)
+        # F: =XLOOKUP(D2, $C:$C, $A:$A)
         ws_lugares.cell(row=fila, column=6).value = f"=_xlfn.XLOOKUP(D{fila},$C:$C,$A:$A)"
-        # G: =BUSCARX(F2, $A:$A, $B:$B)
+        # G: =XLOOKUP(F2, $A:$A, $B:$B)
         ws_lugares.cell(row=fila, column=7).value = f"=_xlfn.XLOOKUP(F{fila},$A:$A,$B:$B)"
 
-    print(f"  ✓ Fórmulas BUSCARX agregadas en columnas F y G (filas 2-{ultima_fila})")
+    print(f"  [OK] Columnas F y G con BUSCARX en LUGARES (filas 2-{ultima_fila})")
 
     return True
 
@@ -752,7 +1067,7 @@ def procesar_cadena_canal_formato(wb, ruta_layout_places, hojas_lp=None):
     print("\n--- Procesando hoja CADENA CANAL FORMATO ---")
 
     if "CADENA CANAL FORMATO" not in wb.sheetnames:
-        print("  ✗ ERROR: No existe la hoja 'CADENA CANAL FORMATO'.")
+        print("  [ERROR] ERROR: No existe la hoja 'CADENA CANAL FORMATO'.")
         return False
 
     ws_destino = wb["CADENA CANAL FORMATO"]
@@ -760,7 +1075,7 @@ def procesar_cadena_canal_formato(wb, ruta_layout_places, hojas_lp=None):
     # Usar datos pre-cargados si están disponibles
     if hojas_lp is None:
         if not os.path.exists(ruta_layout_places):
-            print(f"  ✗ ERROR: No se encontró el layout de lugares: {ruta_layout_places}")
+            print(f"  [ERROR] ERROR: No se encontró el layout de lugares: {ruta_layout_places}")
             return False
         hojas_lp = _leer_wb_hojas(ruta_layout_places, "Formatos", "Cadenas", "Canales")
 
@@ -776,7 +1091,7 @@ def procesar_cadena_canal_formato(wb, ruta_layout_places, hojas_lp=None):
             ws_destino.cell(row=fi, column=1).value = val_a
             ws_destino.cell(row=fi, column=2).value = val_b
             filas_copiadas += 1
-        print(f"  ✓ Copiadas {filas_copiadas} filas de Formatos (A,B -> A,B)")
+        print(f"  [OK] Copiadas {filas_copiadas} filas de Formatos (A,B -> A,B)")
     else:
         print("  ! No se encontró la hoja 'Formatos'")
 
@@ -792,7 +1107,7 @@ def procesar_cadena_canal_formato(wb, ruta_layout_places, hojas_lp=None):
             ws_destino.cell(row=fi, column=3).value = val_a
             ws_destino.cell(row=fi, column=4).value = val_b
             filas_copiadas += 1
-        print(f"  ✓ Copiadas {filas_copiadas} filas de Cadenas (A,B -> C,D)")
+        print(f"  [OK] Copiadas {filas_copiadas} filas de Cadenas (A,B -> C,D)")
     else:
         print("  ! No se encontró la hoja 'Cadenas'")
 
@@ -808,7 +1123,7 @@ def procesar_cadena_canal_formato(wb, ruta_layout_places, hojas_lp=None):
             ws_destino.cell(row=fi, column=5).value = val_a
             ws_destino.cell(row=fi, column=6).value = val_b
             filas_copiadas += 1
-        print(f"  ✓ Copiadas {filas_copiadas} filas de Canales (A,B -> E,F)")
+        print(f"  [OK] Copiadas {filas_copiadas} filas de Canales (A,B -> E,F)")
     else:
         print("  ! No se encontró la hoja 'Canales'")
 
@@ -849,7 +1164,7 @@ def procesar_cadena_canal_formato(wb, ruta_layout_places, hojas_lp=None):
         celda.alignment = align
         celda.border = border
 
-    print("  ✓ Encabezados con estilos aplicados")
+    print("  [OK] Encabezados con estilos aplicados")
 
     return True
 
@@ -859,10 +1174,10 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
     print("\n--- Procesando hoja FORMATOS ---")
 
     if "FORMATOS" not in wb.sheetnames:
-        print("  ✗ ERROR: No existe la hoja 'FORMATOS'.")
+        print("  [ERROR] ERROR: No existe la hoja 'FORMATOS'.")
         return False
     if "LUGARES" not in wb.sheetnames:
-        print("  ✗ ERROR: No existe la hoja 'LUGARES' en la matriz para complementar datos.")
+        print("  [ERROR] ERROR: No existe la hoja 'LUGARES' en la matriz para complementar datos.")
         return False
 
     ws_dst = wb["FORMATOS"]
@@ -871,14 +1186,14 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
     # Usar datos pre-cargados si están disponibles
     if hojas_lp is None:
         if not os.path.exists(ruta_layout_places):
-            print(f"  ✗ ERROR: No se encontró el layout de lugares: {ruta_layout_places}")
+            print(f"  [ERROR] ERROR: No se encontró el layout de lugares: {ruta_layout_places}")
             return False
         hojas_lp = _leer_wb_hojas(ruta_layout_places, "Formatos", "Lugares")
 
     # --- Bloque 1: Formatos (layout_places hoja "Formatos") ---
     rows_formatos_lp = hojas_lp.get("Formatos", [])
     if not rows_formatos_lp:
-        print("  ✗ ERROR: No se encontró la hoja 'Formatos' en layout_places.")
+        print("  [ERROR] ERROR: No se encontró la hoja 'Formatos' en layout_places.")
         return False
 
     fila_dest = 1
@@ -901,7 +1216,7 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
         fila_dest += 1
         filas_formatos += 1
 
-    print(f"  ✓ Copiadas {filas_formatos} filas de 'Formatos' (A-C -> A-C, D -> E)")
+    print(f"  [OK] Copiadas {filas_formatos} filas de 'Formatos' (A-C -> A-C, D -> E)")
 
     # Encabezados y fórmulas chain / channel
     ws_dst.cell(row=1, column=4).value = "chain"   # col D
@@ -910,7 +1225,7 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
     # --- Bloque 2: Lugares (layout_places hoja "Lugares" columnas A,B,N,O,P -> G:K) ---
     rows_lug_lp = hojas_lp.get("Lugares", [])
     if not rows_lug_lp:
-        print("  ✗ ERROR: No se encontró la hoja 'Lugares' en layout_places.")
+        print("  [ERROR] ERROR: No se encontró la hoja 'Lugares' en layout_places.")
         return False
 
     filas_lug_layout = 0
@@ -925,13 +1240,11 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
         fila_dest += 1
         filas_lug_layout += 1
 
-    print(f"  ✓ Copiadas {filas_lug_layout} filas de 'Lugares' (A,B,N,O,P -> G:K)")
+    print(f"  [OK] Copiadas {filas_lug_layout} filas de 'Lugares' (A,B,N,O,P -> G:K)")
 
     # --- Bloque 3: LUGARES (matriz) columnas F,G -> L,M ---
-    # Copiar columnas F y G completas de LUGARES a L y M de FORMATOS
-    # F y G tienen fórmulas XLOOKUP, así que calculamos los valores:
-    # F = XLOOKUP(D, C:C, A:A) -> busca D en C, devuelve A
-    # G = XLOOKUP(F, A:A, B:B) -> busca F en A, devuelve B
+    # L se recalcula desde D -> C -> A para evitar copiar la fórmula de F.
+    # M se calcula desde ese ID usando el mapa A -> B de LUGARES.
     
     # Construir mapas con múltiples formatos de clave para mayor robustez
     map_c_a = {}  # C -> A (normalizado)
@@ -1007,25 +1320,21 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
             if isinstance(val_g, str) and val_g.startswith("="):
                 val_g = "Nombre Sto"
         else:
-            # Filas 2+: calcular valores replicando XLOOKUP
-            # F = XLOOKUP(D, C:C, A:A)
-            # G = XLOOKUP(F, A:A, B:B)
+            # Filas 2+: resolver F desde D y G desde el ID de F.
             val_d = ws_lugares.cell(row=fila, column=4).value
-            
-            # Calcular F buscando D en C para obtener A
             val_f = buscar_en_mapa(map_c_a, val_d)
-            
-            # Calcular G buscando F en A para obtener B
+
             val_g = None
-            if val_f is not None:
+            if val_f not in (None, ""):
                 val_g = buscar_en_mapa(map_a_b, val_f)
-                filas_calculadas += 1
+                if val_g is not None:
+                    filas_calculadas += 1
         
         ws_dst.cell(row=fila, column=12).value = val_f  # L
         ws_dst.cell(row=fila, column=13).value = val_g  # M
         filas_lugares += 1
 
-    print(f"  ✓ Copiadas {filas_lugares} filas de LUGARES F,G -> FORMATOS L,M ({filas_calculadas} calculadas)")
+    print(f"  [OK] Copiadas {filas_lugares} filas de LUGARES F,G -> FORMATOS L,M ({filas_calculadas} calculadas)")
 
     # Encabezados N a W
     headers_values = {
@@ -1097,7 +1406,7 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
             celda.alignment = align
             celda.border = border
 
-    print("  ✓ FORMATOS completado con fórmulas y encabezados coloreados")
+    print("  [OK] FORMATOS completado con fórmulas y encabezados coloreados")
     return True
 
 
@@ -1115,7 +1424,7 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
     hojas_requeridas = ["CONFIGURACIÓN DE ANAQUEL", "FORMATOS", "LUGARES", "PRODUCTOS", "CADENA CANAL FORMATO"]
     for hoja in hojas_requeridas:
         if hoja not in wb.sheetnames:
-            print(f"  ✗ ERROR: No se encontró la hoja '{hoja}'")
+            print(f"  [ERROR] ERROR: No se encontró la hoja '{hoja}'")
             return False
     
     ws_config = wb["CONFIGURACIÓN DE ANAQUEL"]
@@ -1150,25 +1459,50 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
     # 1. Insertar 4 columnas después de E (columna 5), es decir, insertar en columna 6 (F)
     print("  Insertando 4 columnas después de E...")
     ws_config.insert_cols(6, 4)  # Inserta 4 columnas a partir de la columna 6 (F)
-    print("  ✓ 4 columnas insertadas (el contenido existente se recorrió)")
+    print("  [OK] 4 columnas insertadas (el contenido existente se recorrió)")
+    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de insert_cols(6,4)", col_desde=11, col_hasta=150)
 
     # 2. Eliminar columnas Z a AK (26 a 37) después de la inserción previa
     print("  Eliminando columnas Z a AK en CONFIGURACIÓN DE ANAQUEL...")
     ws_config.delete_cols(26, 12)  # Z (26) a AK (37) inclusive
-    print("  ✓ Columnas Z a AK eliminadas")
+    print("  [OK] Columnas Z a AK eliminadas")
+    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de delete_cols(26,12)", col_desde=11, col_hasta=150)
 
-    # 3. Insertar 1 columna después de la columna CH vigente (se calcula tras el borrado)
-    print("  Insertando 1 columna después de CH...")
-    col_ch = column_index_from_string("CH")
-    ws_config.insert_cols(col_ch + 1, 1)
-    print("  ✓ 1 columna insertada después de CH (contenido recorrido)")
+    # 3. No insertar columna adicional en CH.
+    # Esa inserción desalinea el bloque de Polvos respecto a los datos originales.
     
     # ========== CONSTRUIR MAPAS PARA CALCULAR VALORES ==========
     # Estos mapas replican la lógica de los XLOOKUP en Python
+
+    def _keys_variantes(valor):
+        """Genera claves equivalentes para evitar fallas por 123 vs 123.0."""
+        if valor in (None, ""):
+            return []
+        keys = []
+        key = str(valor).strip()
+        if key:
+            keys.append(key)
+        try:
+            key_num = str(int(float(key)))
+            if key_num not in keys:
+                keys.append(key_num)
+        except (ValueError, TypeError):
+            pass
+        return keys
+
+    def _map_set(mapa, clave, valor):
+        for k in _keys_variantes(clave):
+            mapa[k] = valor
+
+    def _map_get(mapa, clave):
+        for k in _keys_variantes(clave):
+            if k in mapa:
+                return mapa[k]
+        return None
     
-    # --- Mapas desde LUGARES (para calcular F y G de LUGARES) ---
-    # F = XLOOKUP(D, C:C, A:A) -> busca D en C, devuelve A
-    # G = XLOOKUP(F, A:A, B:B) -> busca F en A, devuelve B
+    # --- Mapas desde LUGARES ---
+    # C -> A para recalcular ID Sto desde la columna D.
+    # A -> B para completar Nombre Sto.
     map_lugares_c_a = {}  # C -> A (ID lugar)
     map_lugares_a_b = {}  # A -> B (Nombre lugar)
     for fila in range(2, ws_lugares.max_row + 1):
@@ -1176,9 +1510,9 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
         val_b = ws_lugares.cell(row=fila, column=2).value
         val_c = ws_lugares.cell(row=fila, column=3).value
         if val_c not in (None, "") and val_a not in (None, ""):
-            map_lugares_c_a[str(val_c).strip()] = val_a
+            _map_set(map_lugares_c_a, val_c, val_a)
         if val_a not in (None, "") and val_b not in (None, ""):
-            map_lugares_a_b[str(val_a).strip()] = val_b
+            _map_set(map_lugares_a_b, val_a, val_b)
     
     # --- Mapas desde CADENA CANAL FORMATO ---
     map_ccf_c_d = {}  # C (ID Cadena) -> D (Nombre Cadena)
@@ -1288,12 +1622,13 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
         copiar_valor_y_estilo(val_w, ws_formatos.cell(row=fila_src, column=23), ws_config.cell(row=fila_dest, column=7))
         filas_copiadas_formatos += 1
     
-    print(f"  ✓ Copiadas {filas_copiadas_formatos} filas de FORMATOS V,W -> F,G")
+    print(f"  [OK] Copiadas {filas_copiadas_formatos} filas de FORMATOS V,W -> F,G")
+    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de copiar FORMATOS V,W->F,G", col_desde=11, col_hasta=150)
     
     # ========== COPIAR LUGARES F,G -> H,I ==========
     # F = XLOOKUP(D, C:C, A:A)
     # G = XLOOKUP(F, A:A, B:B)
-    print("  Copiando LUGARES F,G -> H,I (calculando valores)...")
+    print("  Copiando LUGARES F,G -> H,I (valores calculados y pegados como texto)...")
     
     # Encontrar última fila con datos en LUGARES columna D
     max_fila_lugares = 1
@@ -1306,28 +1641,24 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
     copiar_valor_y_estilo("ID Sto", ws_lugares.cell(row=1, column=6), ws_config.cell(row=4, column=8))  # F -> H
     copiar_valor_y_estilo("Nombre Sto", ws_lugares.cell(row=1, column=7), ws_config.cell(row=4, column=9))  # G -> I
     
-    # Copiar datos calculados (fila 2+ de LUGARES -> fila 5+ de CONFIG)
+    # Copiar datos (fila 2+ de LUGARES -> fila 5+ de CONFIG)
     filas_copiadas_lugares = 0
     for fila_src in range(2, max_fila_lugares + 1):
         fila_dest = fila_src + 3  # fila 2 -> fila 5, fila 3 -> fila 6, etc.
-        
-        # Calcular F y G usando los mapas (replicando XLOOKUP)
-        # F = XLOOKUP(D, C:C, A:A)
-        # G = XLOOKUP(F, A:A, B:B)
+
+        # F y G se recalculan desde mapas para evitar copiar fórmulas.
         val_d = ws_lugares.cell(row=fila_src, column=4).value
-        val_f = None
-        val_g = None
-        
-        if val_d not in (None, ""):
-            val_f = map_lugares_c_a.get(str(val_d).strip())
-            if val_f is not None:
-                val_g = map_lugares_a_b.get(str(val_f).strip())
+        val_f = _map_get(map_lugares_c_a, val_d)
+
+        # G se resuelve desde el ID de F.
+        val_g = _map_get(map_lugares_a_b, val_f)
         
         copiar_valor_y_estilo(val_f, ws_lugares.cell(row=fila_src, column=6), ws_config.cell(row=fila_dest, column=8))  # H
         copiar_valor_y_estilo(val_g, ws_lugares.cell(row=fila_src, column=7), ws_config.cell(row=fila_dest, column=9))  # I
         filas_copiadas_lugares += 1
     
-    print(f"  ✓ Copiadas {filas_copiadas_lugares} filas de LUGARES F,G -> H,I")
+    print(f"  [OK] Copiadas {filas_copiadas_lugares} filas de LUGARES F,G -> H,I")
+    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de copiar LUGARES F,G->H,I", col_desde=11, col_hasta=150)
     
     # ========== COPIAR PRODUCTOS filas 4,5,6 -> CONFIG filas 2,3,4 desde K ==========
     # E = col 5 en PRODUCTOS
@@ -1337,17 +1668,21 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
     # Fila 6 (Nombre): =XLOOKUP(col2, $C$8:$C$1000, $B$8:$B$1000)
     print("  Copiando PRODUCTOS filas 4,5,6 desde E -> CONFIG filas 2,3,4 desde K...")
     
-    # Construir mapa C -> (A, B) desde PRODUCTOS filas 8-1000
+    # Construir mapas desde PRODUCTOS filas 8-1000
     # C = SKU, A = ID, B = Nombre
     map_productos_c_ab = {}  # C (SKU) -> (A=ID, B=Nombre)
+    map_productos_a_b = {}   # A (ID)  -> B (Nombre)
     for fila in range(8, min(ws_productos.max_row + 1, 1001)):
         val_a = ws_productos.cell(row=fila, column=1).value  # A = ID
         val_b = ws_productos.cell(row=fila, column=2).value  # B = Nombre
         val_c = ws_productos.cell(row=fila, column=3).value  # C = SKU
         if val_c not in (None, ""):
-            map_productos_c_ab[str(val_c).strip()] = (val_a, val_b)
+            _map_set(map_productos_c_ab, val_c, (val_a, val_b))
+        if val_a not in (None, ""):
+            _map_set(map_productos_a_b, val_a, val_b)
     
-    print(f"    Mapa de productos construido: {len(map_productos_c_ab)} entradas")
+    print(f"    Mapa de productos por SKU construido: {len(map_productos_c_ab)} entradas")
+    print(f"    Mapa de productos por ID construido: {len(map_productos_a_b)} entradas")
     
     # Encontrar última columna con datos en PRODUCTOS fila 4 desde columna E
     max_col_productos = 5  # Mínimo columna E
@@ -1387,7 +1722,7 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
                 pass
 
     if merges_removed:
-        print(f"  ✓ Deshecho {merges_removed} merges que bloqueaban escritura")
+        print(f"  [OK] Deshecho {merges_removed} merges que bloqueaban escritura")
     
     # Función para obtener valor (calculando si es fórmula XLOOKUP)
     def obtener_valor_calculado(celda, fila_origen, col_idx):
@@ -1397,17 +1732,28 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
         if not isinstance(val, str) or not val.startswith("="):
             return val
         
-        # Si es fórmula en fila 5 o 6, calcular usando el mapa
+        # Si es fórmula en fila 5 o 6, calcular usando los mapas
         if fila_origen in (5, 6):
-            # Obtener el valor de fila 2 en la misma columna (es el SKU a buscar)
+            # Obtener el valor de fila 2 en la misma columna.
+            # En el flujo actual es ID, pero mantenemos fallback por SKU.
             val_fila2 = ws_productos.cell(row=2, column=col_idx).value
             if val_fila2 not in (None, ""):
-                datos = map_productos_c_ab.get(str(val_fila2).strip())
-                if datos:
-                    if fila_origen == 5:  # Fila 5 = ID (columna A)
-                        return datos[0]
-                    else:  # Fila 6 = Nombre (columna B)
-                        return datos[1]
+                # Buscar primero por ID
+                nombre_por_id = _map_get(map_productos_a_b, val_fila2)
+
+                # Fallback por SKU para compatibilidad con layouts anteriores
+                datos_por_sku = _map_get(map_productos_c_ab, val_fila2)
+
+                if fila_origen == 5:  # Fila 5 = ID
+                    if nombre_por_id is not None:
+                        return val_fila2
+                    if datos_por_sku:
+                        return datos_por_sku[0]
+                else:  # Fila 6 = Nombre
+                    if nombre_por_id is not None:
+                        return nombre_por_id
+                    if datos_por_sku:
+                        return datos_por_sku[1]
         
         # Si es otra fórmula o no se encontró, devolver None
         return None
@@ -1429,17 +1775,36 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
         
         # Fila 5 PRODUCTOS -> Fila 3 CONFIG (ID calculado)
         val_5 = obtener_valor_calculado(ws_productos.cell(row=5, column=col_src), 5, col_src)
+        if val_5 in (None, ""):
+            val_5 = ws_productos.cell(row=2, column=col_src).value
+        if val_5 in (None, ""):
+            sku_fila3 = ws_productos.cell(row=3, column=col_src).value
+            datos_por_sku = _map_get(map_productos_c_ab, sku_fila3)
+            if datos_por_sku:
+                val_5 = datos_por_sku[0]
         copiar_valor_y_estilo(val_5, ws_productos.cell(row=5, column=col_src), ws_config.cell(row=3, column=col_dest))
         
         # Fila 6 PRODUCTOS -> Fila 4 CONFIG (Nombre calculado)
         val_6 = obtener_valor_calculado(ws_productos.cell(row=6, column=col_src), 6, col_src)
+        if val_6 in (None, "") and val_5 not in (None, ""):
+            val_6 = _map_get(map_productos_a_b, val_5)
+        if val_6 in (None, ""):
+            sku_fila3 = ws_productos.cell(row=3, column=col_src).value
+            datos_por_sku = _map_get(map_productos_c_ab, sku_fila3)
+            if datos_por_sku:
+                val_6 = datos_por_sku[1]
         copiar_valor_y_estilo(val_6, ws_productos.cell(row=6, column=col_src), ws_config.cell(row=4, column=col_dest))
         
         cols_copiadas += 1
     
-    print(f"  ✓ Copiadas {cols_copiadas} columnas de PRODUCTOS (filas 4-6 desde E) -> CONFIG (filas 2-4 desde K)")
+    print(f"  [OK] Copiadas {cols_copiadas} columnas de PRODUCTOS (filas 4-6 desde E) -> CONFIG (filas 2-4 desde K)")
+    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de copiar PRODUCTOS (filas 4-6)", col_desde=11, col_hasta=150)
+
+    # Reubicar Aqualit para que quede inmediatamente a la izquierda de Competencia
+    reubicar_aqualit_junto_competencia(ws_config, col_dest_min)
+    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de reubicar_aqualit_junto_competencia", col_desde=11, col_hasta=150)
     
-    print("  ✓ CONFIGURACIÓN DE ANAQUEL procesado completamente")
+    print("  [OK] CONFIGURACIÓN DE ANAQUEL procesado completamente")
     return True
 
 
@@ -1481,12 +1846,16 @@ def procesar_matriz(ruta_matriz, ruta_layout_products, ruta_layout_places, ruta_
         wb.close()
         return False
     
+    # 4b. Eliminar columnas extras después del último producto (dinámicamente)
+    ws_productos = wb["PRODUCTOS"]
+    eliminar_columnas_extras_dinamico(ws_productos, col_inicio_copiado)
+
     # 5. Eliminar columnas de productos discontinuados (300ml) y de competencia (Total xxx)
     ws_productos = wb["PRODUCTOS"]
     eliminar_columnas_dinamico(ws_productos, col_inicio_copiado)
     
     # 6. Llenar espacios vacíos con datos de Productos de Sams
-    llenar_espacios_vacios_productos_sams(ws_productos, col_inicio_copiado, ruta_base)
+    llenar_espacios_vacios_productos_sams(ws_productos, col_inicio_copiado, ruta_base, ruta_matriz)
 
     # 6b. Asegurar color azul en fila 5 desde la columna E en adelante
     ancho_total = ws_productos.max_column - col_inicio_copiado + 1
@@ -1495,7 +1864,13 @@ def procesar_matriz(ruta_matriz, ruta_layout_products, ruta_layout_places, ruta_
     except Exception:
         pass
     
-    # 7. Establecer fórmulas solo donde no haya valores
+    # 7. Copiar IDs en fila 5 y establecer fórmula del nombre en fila 6
+    establecer_formulas_id_nombre(ws_productos, col_inicio_copiado)
+
+    # 7b. Reordenar bloque de Polvo usando IDs/nombres ya calculados en filas 5-6
+    reordenar_polvo_antes_de_aqualit_productos(ws_productos, col_inicio_copiado)
+
+    # 7c. Regenerar fórmulas tras mover columnas para evitar referencias corridas
     establecer_formulas_id_nombre(ws_productos, col_inicio_copiado)
     
     # 8. Pre-cargar layout_places UNA sola vez en memoria para las tres funciones
@@ -1503,7 +1878,7 @@ def procesar_matriz(ruta_matriz, ruta_layout_products, ruta_layout_places, ruta_
     if ruta_layout_places and os.path.exists(ruta_layout_places):
         print("\n--- Pre-cargando layout_places en memoria ---")
         hojas_lp = _leer_wb_hojas(ruta_layout_places, "Lugares", "Formatos", "Cadenas", "Canales")
-        print(f"  ✓ Hojas cargadas: {list(hojas_lp.keys())}")
+        print(f"  [OK] Hojas cargadas: {list(hojas_lp.keys())}")
     
     # 9. Procesar hoja LUGARES
     if ruta_layout_places:
@@ -1521,7 +1896,7 @@ def procesar_matriz(ruta_matriz, ruta_layout_products, ruta_layout_places, ruta_
     print("\n--- Guardando archivo intermedio ---")
     wb.save(ruta_matriz)
     wb.close()
-    print("  ✓ Archivo guardado (fórmulas escritas)")
+    print("  [OK] Archivo guardado (fórmulas escritas)")
     
     # 13. Reabrir el archivo para procesar CONFIGURACIÓN DE ANAQUEL
     print("\n--- Reabriendo archivo para procesar CONFIG ---")
@@ -1529,38 +1904,46 @@ def procesar_matriz(ruta_matriz, ruta_layout_products, ruta_layout_places, ruta_
     
     # 14. Procesar hoja CONFIGURACIÓN DE ANAQUEL
     procesar_configuracion_anaquel(wb, ruta_matriz)
+    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de procesar_configuracion_anaquel", col_desde=11, col_hasta=150)
 
     # 14b. Rellenar columnas CJ-CT con 1s antes del filtro
     rellenar_unos_configuracion_anaquel(wb)
+    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de rellenar_unos_configuracion_anaquel", col_desde=11, col_hasta=150)
 
     # 15. Aplicar filtro de formato (ID 4770)
     procesar_filtro_formato(wb)
+    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de procesar_filtro_formato", col_desde=11, col_hasta=150)
+
+    # 15b. Restaurar valores de Aqualit desde la hoja respaldo original
+    restaurar_aqualit_desde_respaldo(wb)
+    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de restaurar_aqualit_desde_respaldo", col_desde=11, col_hasta=150)
 
     # 16. Marcar producto general
     procesar_producto_general(wb)
+    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de procesar_producto_general", col_desde=11, col_hasta=150)
     
     # Guardar el archivo
     print("\n--- Guardando cambios ---")
     wb.save(ruta_matriz)
-    print(f"✓ Archivo guardado: {os.path.basename(ruta_matriz)}")
+    print(f"[OK] Archivo guardado: {os.path.basename(ruta_matriz)}")
     
     wb.close()
     
     print("\n" + "="*50)
     print("RESUMEN")
     print("="*50)
-    print("✓ Hoja de respaldo creada/mantenida: CONFIGURACIÓN DE ANAQUEL 1 (contenido preservado)")
-    print("✓ Hojas creadas/limpiadas: PRODUCTOS, LUGARES, FORMATOS, CADENA CANAL FORMATO")
-    print("✓ Productos copiados: {filas_copiadas} filas (cols A,B,E -> A,B,C desde fila 8)")
-    print("✓ Columna C normalizada (texto a número si aplica) en PRODUCTOS")
-    print("✓ Copiado CONFIGURACIÓN DE ANAQUEL 1 -> PRODUCTOS (G2.. hasta última col con datos, filas 2-4, con estilos)")
-    print("✓ Fórmulas BUSCARX colocadas en PRODUCTOS fila 5, arrastradas a la derecha")
-    print("✓ LUGARES procesado: layout_places cols A,B,F -> A,B,C con fórmulas BUSCARX en F,G")
-    print("✓ CADENA CANAL FORMATO procesado: hojas Formatos, Cadenas, Canales copiadas")
-    print("✓ FORMATOS procesado: datos y fórmulas completados")
-    print("✓ CONFIGURACIÓN DE ANAQUEL procesado: 4 cols insertadas, datos de FORMATOS/LUGARES/PRODUCTOS copiados")
-    print("✓ Producto general marcado (incluye duplicado CH->CI)")
-    print("✓ Formato 4770 ajustado (CU-DG=1, CD=1, CJ-CT limpio)")
+    print("[OK] Hoja de respaldo creada/mantenida: CONFIGURACIÓN DE ANAQUEL 1 (contenido preservado)")
+    print("[OK] Hojas creadas/limpiadas: PRODUCTOS, LUGARES, FORMATOS, CADENA CANAL FORMATO")
+    print("[OK] Productos copiados: {filas_copiadas} filas (cols A,B,E -> A,B,C desde fila 8)")
+    print("[OK] Columna C normalizada (texto a número si aplica) en PRODUCTOS")
+    print("[OK] Copiado CONFIGURACIÓN DE ANAQUEL 1 -> PRODUCTOS (G2.. hasta última col con datos, filas 2-4, con estilos)")
+    print("[OK] PRODUCTOS procesado: fila 5 usa ID directo y fila 6 mantiene BUSCARX")
+    print("[OK] LUGARES procesado: layout_places cols A,B,F -> A,B,C con ID directo en F y BUSCARX en G")
+    print("[OK] CADENA CANAL FORMATO procesado: hojas Formatos, Cadenas, Canales copiadas")
+    print("[OK] FORMATOS procesado: datos y fórmulas completados")
+    print("[OK] CONFIGURACIÓN DE ANAQUEL procesado: 4 cols insertadas, datos de FORMATOS/LUGARES/PRODUCTOS copiados")
+    print("[OK] Producto general marcado (incluye duplicado CH->CI)")
+    print("[OK] Formato 4770 ajustado (CU-DG=1, CD=1, CJ-CT limpio)")
     
     return True
 

@@ -1,0 +1,14 @@
+Abriendo archivo...
+Hoja cargada. Max column: 108
+Buscando Fifteen y Zero...
+  Encontrado Fifteen en CA (79): Electrolit Fifteen pack
+  Encontrado Zero en CD (82): Electrolife Zero Polvo
+
+Rango entre Fifteen (CA) y Zero (CD):
+  CA  ( 79): MARCADOR: Electrolit Fifteen pack
+  CB  ( 80): vacío en fila 2, datos en 4-6
+  CC  ( 81): vacío en fila 2, datos en 4-6
+  CD  ( 82): MARCADOR: Electrolife Zero Polvo
+
+RESULTADO:
+SUCCESS: Cero columnas completamente vacías entre Fifteen y Zero

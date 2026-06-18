@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import getpass
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -13,6 +14,23 @@ import openpyxl
 
 StatusCallback = Callable[[str], None]
 ProgressCallback = Callable[[int, int, str], None]
+
+
+@dataclass(frozen=True)
+class FormatTarget:
+    channel_id: str
+    chain_id: str
+    format_name: str
+
+    def dedupe_key(self) -> tuple[str, str, str]:
+        return (
+            self.channel_id.casefold(),
+            self.chain_id.casefold(),
+            self.format_name.casefold(),
+        )
+
+    def label(self) -> str:
+        return f"Canal={self.channel_id} | Cadena={self.chain_id} | Formato={self.format_name}"
 
 
 @dataclass
@@ -34,53 +52,95 @@ class SelectionSummary:
         }
 
 
-def parse_items_from_text(raw_text: str) -> list[str]:
-    separators = ["\n", ",", ";", "\t"]
-    normalized = raw_text
-    for separator in separators[1:]:
-        normalized = normalized.replace(separator, "\n")
+def parse_items_from_text(raw_text: str) -> list[FormatTarget]:
+    items: list[FormatTarget] = []
+    seen: set[tuple[str, str, str]] = set()
 
-    items: list[str] = []
-    seen: set[str] = set()
-    for chunk in normalized.split("\n"):
-        value = chunk.strip()
+    for line in raw_text.splitlines():
+        value = line.strip()
         if not value:
             continue
-        key = value.casefold()
+
+        parts = [chunk.strip() for chunk in re.split(r"[\t;,]", value) if chunk.strip()]
+        if len(parts) < 3:
+            continue
+
+        target = FormatTarget(
+            channel_id=_normalize_id(parts[0]),
+            chain_id=_normalize_id(parts[1]),
+            format_name=parts[2],
+        )
+        key = target.dedupe_key()
         if key in seen:
             continue
         seen.add(key)
-        items.append(value)
+        items.append(target)
+
     return items
 
 
-def load_items_from_excel(path: str) -> list[str]:
+def _normalize_id(value: object) -> str:
+    text = str(value).strip()
+    if not text:
+        return ""
+
+    try:
+        number = float(text)
+        if number.is_integer():
+            return str(int(number))
+    except Exception:
+        pass
+    return text
+
+
+def load_items_from_excel(path: str) -> list[FormatTarget]:
     workbook = openpyxl.load_workbook(path, data_only=True, read_only=True)
     try:
         sheet = workbook.active
-        values: list[str] = []
-        seen: set[str] = set()
+        values: list[FormatTarget] = []
+        seen: set[tuple[str, str, str]] = set()
 
         for row_index, row in enumerate(sheet.iter_rows(values_only=True), start=1):
-            first_non_empty = next((cell for cell in row if cell is not None and str(cell).strip()), None)
-            if first_non_empty is None:
+            first_three = list(row[:3])
+            while len(first_three) < 3:
+                first_three.append(None)
+
+            row_values = [str(cell).strip() if cell is not None else "" for cell in first_three]
+            if not any(row_values):
                 continue
 
-            value = str(first_non_empty).strip()
-            if row_index == 1 and value.casefold() in {
-                "elemento",
-                "elementos",
-                "cadena",
-                "formato",
-                "nombre",
-            }:
+            if row_index == 1:
+                headers = {cell.casefold() for cell in row_values if cell}
+                if headers.intersection(
+                    {
+                        "canal",
+                        "channel",
+                        "channel_id",
+                        "cadena",
+                        "chain",
+                        "chain_id",
+                        "formato",
+                        "format",
+                        "nombre",
+                        "elemento",
+                        "elementos",
+                    }
+                ):
+                    continue
+
+            target = FormatTarget(
+                channel_id=_normalize_id(row_values[0]),
+                chain_id=_normalize_id(row_values[1]),
+                format_name=row_values[2],
+            )
+            if not target.format_name:
                 continue
 
-            key = value.casefold()
+            key = target.dedupe_key()
             if key in seen:
                 continue
             seen.add(key)
-            values.append(value)
+            values.append(target)
 
         return values
     finally:
@@ -144,7 +204,7 @@ class WebSelectionSession:
 
     def run_selection(
         self,
-        items: list[str],
+        items: list[FormatTarget],
         target_button: str,
         progress_cb: ProgressCallback | None = None,
         status_cb: StatusCallback | None = None,
@@ -161,6 +221,7 @@ class WebSelectionSession:
             from selenium.webdriver.common.action_chains import ActionChains
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
+            from selenium.common.exceptions import TimeoutException
         except Exception as exc:  # pragma: no cover - depende del entorno local
             raise RuntimeError(
                 "No se pudieron importar utilidades de selenium."
@@ -175,8 +236,9 @@ class WebSelectionSession:
         failed: list[tuple[str, str]] = []
 
         wait = WebDriverWait(self._browser, 25)
+        item_wait = WebDriverWait(self._browser, 6)
 
-        max_retries = 2
+        max_retries = 1
         post_confirm_wait_s = 2.5
 
         def _normalize_action(text: str) -> str:
@@ -186,6 +248,46 @@ class WebSelectionSession:
             if "agregar" in value:
                 return "agregar"
             return value
+
+        def _normalize_text(value: str) -> str:
+            return " ".join(value.split()).casefold()
+
+        def _split_small_text(small_text: str) -> tuple[str, str]:
+            parts = [part.strip() for part in small_text.replace("&gt;", ">" ).split(">")]
+            if len(parts) >= 2:
+                return _normalize_text(parts[0]), _normalize_text(parts[1])
+            return "", ""
+
+        def _find_matching_span(item: FormatTarget):
+            target_format = _normalize_text(item.format_name)
+            target_channel = _normalize_text(_normalize_id(item.channel_id))
+            target_chain = _normalize_text(_normalize_id(item.chain_id))
+
+            spans = self._browser.find_elements(By.XPATH, "//span[@id='formatDsc']")
+            for span in spans:
+                try:
+                    if _normalize_text(span.text) != target_format:
+                        continue
+
+                    badge = span.find_element(
+                        By.XPATH,
+                        "./ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' badge ')][1]",
+                    )
+                    small = badge.find_element(By.XPATH, ".//small[1]")
+
+                    attr_channel = _normalize_text(_normalize_id(small.get_attribute("channel-id") or ""))
+                    attr_chain = _normalize_text(_normalize_id(small.get_attribute("chain-id") or ""))
+                    text_channel, text_chain = _split_small_text(small.text or "")
+
+                    channel_match = target_channel in {attr_channel, text_channel}
+                    chain_match = target_chain in {attr_chain, text_chain}
+
+                    if channel_match and chain_match:
+                        return span
+                except Exception:
+                    continue
+
+            return None
 
         def _safe_click(element):
             try:
@@ -250,12 +352,14 @@ class WebSelectionSession:
                 _safe_click(cancel)
                 _wait_modal_closed()
 
-        def _open_modal_for_item(item_name: str):
-            span = wait.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, f"//span[@id='formatDsc' and normalize-space(text())='{item_name}']")
-                )
-            )
+        def _open_modal_for_item(item: FormatTarget):
+            try:
+                span = item_wait.until(lambda _driver: _find_matching_span(item))
+            except TimeoutException as exc:
+                raise RuntimeError(
+                    "No se encontro tarjeta que coincida con Canal/Cadena/Formato."
+                ) from exc
+
             heading = span.find_element(By.XPATH, "./ancestor::h6[1]")
             self._browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", heading)
             time.sleep(0.2)
@@ -280,21 +384,30 @@ class WebSelectionSession:
             raise RuntimeError("No se pudo abrir el modal del formato.")
 
         for index, item in enumerate(items, start=1):
+            item_label = item.label()
             if status_cb:
-                status_cb(f"Procesando {index}/{len(items)}: {item}")
+                status_cb(f"Procesando {index}/{len(items)}: {item_label}")
             if progress_cb:
-                progress_cb(index, len(items), item)
+                progress_cb(index, len(items), item_label)
 
             try:
                 expected_after = "deseleccionar" if expected_action == "agregar" else "agregar"
                 applied = False
 
                 for attempt in range(max_retries + 1):
-                    _form, confirm, _cancel = _open_modal_for_item(item)
+                    try:
+                        _form, confirm, _cancel = _open_modal_for_item(item)
+                    except RuntimeError as exc:
+                        if "No se encontro tarjeta" in str(exc):
+                            failed.append((item_label, str(exc)))
+                            applied = True
+                            break
+                        raise
+
                     current_action = _normalize_action(confirm.text)
 
                     if current_action != expected_action:
-                        ignored.append(item)
+                        ignored.append(item_label)
                         _close_modal_safely()
                         applied = True
                         break
@@ -313,23 +426,23 @@ class WebSelectionSession:
                     _close_modal_safely()
 
                     if verify_action == expected_after:
-                        success.append(item)
+                        success.append(item_label)
                         applied = True
                         break
 
                     if attempt < max_retries and status_cb:
                         status_cb(
-                            f"Reintentando {item} ({attempt + 1}/{max_retries}) porque el cambio no se reflejo todavia..."
+                            f"Reintentando {item_label} ({attempt + 1}/{max_retries}) porque el cambio no se reflejo todavia..."
                         )
 
                 if not applied:
-                    failed.append((item, "No se reflejo el cambio despues de reintentos."))
+                    failed.append((item_label, "No se reflejo el cambio despues de reintentos."))
             except Exception as exc:
                 try:
                     _close_modal_safely()
                 except Exception:
                     pass
-                failed.append((item, str(exc)))
+                failed.append((item_label, str(exc)))
 
         os.makedirs(output_dir, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -348,7 +461,7 @@ class WebSelectionSession:
 
 def run_web_selection(
     url: str,
-    items: list[str],
+    items: list[FormatTarget],
     use_profile: bool = True,
     target_button: str = "Agregar",
     output_dir: str = "docs/runs",

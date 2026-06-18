@@ -44,9 +44,10 @@ class _ProcesoThread(QThread):
     terminado      = Signal(str)   # carpeta de salida en Descargas
     error_ocurrido = Signal(str)   # mensaje de error
 
-    def __init__(self, ruta_maestro, ruta_layout_places):
+    def __init__(self, ruta_maestro_1, ruta_maestro_2, ruta_layout_places):
         super().__init__()
-        self._ruta_maestro       = ruta_maestro
+        self._ruta_maestro_1     = ruta_maestro_1
+        self._ruta_maestro_2     = ruta_maestro_2
         self._ruta_layout_places = ruta_layout_places
 
     def run(self):
@@ -63,9 +64,10 @@ class _ProcesoThread(QThread):
             os.makedirs(carpeta_salida, exist_ok=True)
 
             if not actualizar_catalogo_lugares(
-                    self._ruta_maestro,
+                    self._ruta_maestro_1,
                     self._ruta_layout_places,
-                    carpeta_salida):
+                    carpeta_salida,
+                    ruta_maestro_extra=self._ruta_maestro_2):
                 raise RuntimeError("El proceso terminó sin resultados.")
 
             self.terminado.emit(carpeta_salida)
@@ -120,10 +122,10 @@ class VistaActualizarCatalogoLugares(QWidget):
 
         # ── Descripción ──────────────────────────────────────────────
         lbl_desc = QLabel(
-            "Dependiendo el maestro de lugares se detectara si hay cambios en el valor de "
-            "algun dato de las tiendas y se actualizara, asi como detectara si hay nuevos "
-            "lugares y los agregara. Este proceso dara como resultado un archivo layout_places "
-            "listo para subir al sistema"
+            "Puedes cargar el Maestro de lugares y la plantilla. Opcionalmente puedes "
+            "subir un segundo Maestro que aporte datos adicionales (no sobrescribe "
+            "los campos que ya existan en el primer Maestro). El resultado sera un "
+            "layout_places listo para subir al sistema."
         )
         lbl_desc.setFont(QFont("Segoe UI", 13))
         lbl_desc.setStyleSheet("color: #333;")
@@ -138,7 +140,7 @@ class VistaActualizarCatalogoLugares(QWidget):
         content.addWidget(lbl_req_titulo)
         content.addSpacing(6)
 
-        lbl_req_body = QLabel("  · Maestro de lugares\n  · layout_places")
+        lbl_req_body = QLabel("  · Maestro de lugares\n  · Maestro de lugares (opcional)\n  · layout_places")
         lbl_req_body.setFont(QFont("Segoe UI", 12))
         lbl_req_body.setStyleSheet("color: #333;")
         content.addWidget(lbl_req_body)
@@ -147,11 +149,13 @@ class VistaActualizarCatalogoLugares(QWidget):
         # ── Zonas de drop ────────────────────────────────────────────
         drops_layout = QHBoxLayout()
         drops_layout.setSpacing(20)
-        self._dz_maestro = DropZone("Arrastra aqui el archivo\nMaestro de lugares")
+        self._dz_maestro_1 = DropZone("Arrastra aqui el archivo\nMaestro de lugares 1")
+        self._dz_maestro_2 = DropZone("Arrastra aqui el archivo\nMaestro de lugares 2")
         self._dz_places  = DropZone(
             "Arrastra aqui el archivo\nlayout_places",
             patron="layout_places")
-        drops_layout.addWidget(self._dz_maestro)
+        drops_layout.addWidget(self._dz_maestro_1)
+        drops_layout.addWidget(self._dz_maestro_2)
         drops_layout.addWidget(self._dz_places)
         content.addLayout(drops_layout)
         content.addSpacing(32)
@@ -245,13 +249,13 @@ class VistaActualizarCatalogoLugares(QWidget):
 
     # ── Lógica ───────────────────────────────────────────────────────
     def _validar(self) -> str | None:
-        if not self._dz_maestro.tiene_archivo():
+        if not self._dz_maestro_1.tiene_archivo():
             return "Falta el archivo Maestro de lugares."
         if not self._dz_places.tiene_archivo():
             return "Falta el archivo layout_places."
         try:
             wb = openpyxl.load_workbook(
-                self._dz_maestro.ruta, read_only=True, data_only=True)
+                self._dz_maestro_1.ruta, read_only=True, data_only=True)
             wb.close()
         except PermissionError:
             return ("El archivo Maestro de lugares está abierto en Excel.\n"
@@ -259,6 +263,18 @@ class VistaActualizarCatalogoLugares(QWidget):
         except Exception:
             return ("No se pudo leer el Maestro de lugares.\n"
                     "Asegúrate de que no esté dañado.")
+        # Validar segundo maestro solo si fue cargado (es opcional)
+        if self._dz_maestro_2.tiene_archivo():
+            try:
+                wb = openpyxl.load_workbook(
+                    self._dz_maestro_2.ruta, read_only=True, data_only=True)
+                wb.close()
+            except PermissionError:
+                return ("El archivo Maestro de lugares (opcional) está abierto en Excel.\n"
+                        "Ciérralo e intenta de nuevo.")
+            except Exception:
+                return ("No se pudo leer el Maestro de lugares (opcional).\n"
+                        "Asegúrate de que no esté dañado.")
         return None
 
     def _comenzar(self):
@@ -268,12 +284,14 @@ class VistaActualizarCatalogoLugares(QWidget):
             return
 
         self._btn_back.setEnabled(False)
-        self._dz_maestro.setEnabled(False)
+        self._dz_maestro_1.setEnabled(False)
+        self._dz_maestro_2.setEnabled(False)
         self._dz_places.setEnabled(False)
         self._estado.setCurrentIndex(1)
 
         self._hilo = _ProcesoThread(
-            ruta_maestro       = self._dz_maestro.ruta,
+            ruta_maestro_1     = self._dz_maestro_1.ruta,
+            ruta_maestro_2     = self._dz_maestro_2.ruta,
             ruta_layout_places = self._dz_places.ruta,
         )
         self._hilo.terminado.connect(self._on_terminado)
@@ -302,7 +320,8 @@ class VistaActualizarCatalogoLugares(QWidget):
         self._estado.setCurrentIndex(2)
 
     def _reiniciar(self):
-        self._dz_maestro.reset()
+        self._dz_maestro_1.reset()
+        self._dz_maestro_2.reset()
         self._dz_places.reset()
         self._btn_back.setEnabled(True)
         self._estado.setCurrentIndex(0)

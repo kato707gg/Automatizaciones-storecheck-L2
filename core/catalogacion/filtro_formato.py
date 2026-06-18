@@ -80,7 +80,7 @@ def rellenar_unos_configuracion_anaquel(wb):
             ws.cell(row=fila, column=col).value = 1
         filas += 1
 
-    print(f"  ✓ Columnas competencia "
+    print(f"  [OK] Columnas competencia "
           f"{get_column_letter(comp_inicio)}-{get_column_letter(comp_fin)} "
           f"llenas de 1s en filas 5-{ws.max_row} ({filas} filas afectadas)")
 
@@ -90,7 +90,7 @@ def procesar_filtro_formato(wb):
     print("\n--- Procesando filtro de formato (ID 4770) ---")
 
     if "CONFIGURACIÓN DE ANAQUEL" not in wb.sheetnames:
-        print("  ✗ ERROR: No se encontró la hoja 'CONFIGURACIÓN DE ANAQUEL'")
+        print("  [ERROR] ERROR: No se encontró la hoja 'CONFIGURACIÓN DE ANAQUEL'")
         return False
 
     ws = wb["CONFIGURACIÓN DE ANAQUEL"]
@@ -134,9 +134,9 @@ def procesar_filtro_formato(wb):
                     ws.cell(row=fila, column=col).value = None
                     celdas_eliminadas += 1
 
-    print(f"  ✓ Filas procesadas: {filas_procesadas}")
-    print(f"  ✓ Celdas con 1 colocadas: {celdas_actualizadas}")
-    print(f"  ✓ Celdas limpiadas: {celdas_eliminadas}")
+    print(f"  [OK] Filas procesadas: {filas_procesadas}")
+    print(f"  [OK] Celdas con 1 colocadas: {celdas_actualizadas}")
+    print(f"  [OK] Celdas limpiadas: {celdas_eliminadas}")
     return True
 
 

@@ -1,0 +1,14 @@
+{
+  "fecha": "2026-04-13 15:52:51",
+  "total": 4,
+  "exitosos": [
+    "Canal=ABARROTEROS | Cadena=ABARROTES MONTERREY | Formato=DZ",
+    "Canal=FARMACIA | Cadena=FARMACIAS ROMA | Formato=FARMACIA IND",
+    "Canal=FARMACIA | Cadena=FARMACIAS DEL CENTRO | Formato=FARMACIAS DEL CENTRO"
+  ],
+  "ignorados": [
+    "Canal=CLUB DE PRECIO | Cadena=SANBORNS | Formato=SANBORNS"
+  ],
+  "fallidos": {},
+  "archivo_resultado": "C:\\Users\\katoH\\OneDrive\\Documentos\\Proyectos personales\\Automatizaciones storecheck L2\\docs\\runs\\20260413_155251_automatizacion5_seleccion.json"
+}

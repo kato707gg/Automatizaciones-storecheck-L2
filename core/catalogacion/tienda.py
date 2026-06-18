@@ -7,6 +7,30 @@ import openpyxl
 from openpyxl.utils import get_column_letter, column_index_from_string
 
 
+def _normalizar_id(valor):
+    """Normaliza IDs numericos sin tocar strings con ceros a la izquierda."""
+    if valor is None:
+        return ""
+    if isinstance(valor, float) and valor != valor:
+        return ""
+    if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+        if float(valor).is_integer():
+            return str(int(valor))
+        return str(valor).strip()
+    texto = str(valor).strip()
+    if texto.lower() == "nan":
+        return ""
+    if texto.isdigit() and len(texto) > 1 and texto.startswith("0"):
+        return texto
+    try:
+        num = float(texto)
+        if num.is_integer():
+            return str(int(num))
+    except (ValueError, TypeError):
+        pass
+    return texto
+
+
 def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
     """
     Procesa la catalogación por tienda.
@@ -24,7 +48,7 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
     
     # Verificar que el archivo matriz existe
     if not os.path.exists(ruta_matriz):
-        print(f"  ✗ ERROR: No se encontró el archivo matriz: {ruta_matriz}")
+        print(f"  [ERROR] ERROR: No se encontró el archivo matriz: {ruta_matriz}")
         return False
     
     # Buscar archivo layout_place_scope_188865 en la carpeta base
@@ -35,7 +59,7 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
             break
     
     if not archivo_plantilla or not os.path.exists(archivo_plantilla):
-        print(f"  ✗ ERROR: No se encontró layout_place_scope_188865.xlsx en {ruta_base}")
+        print(f"  [ERROR] ERROR: No se encontró layout_place_scope_188865.xlsx en {ruta_base}")
         return False
     
     print(f"  Archivo matriz: {os.path.basename(ruta_matriz)}")
@@ -59,7 +83,7 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
         wb_matriz = openpyxl.load_workbook(ruta_matriz, data_only=True, read_only=True)
         
         if nombre_hoja not in wb_matriz.sheetnames:
-            print(f"  ✗ ERROR: No se encontró la hoja '{nombre_hoja}'")
+            print(f"  [ERROR] ERROR: No se encontró la hoja '{nombre_hoja}'")
             wb_matriz.close()
             return False
         
@@ -98,7 +122,7 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
                 id_formato = gc(i, col_id_formato)
                 
                 if id_formato is not None:
-                    id_formato_str = str(id_formato).strip()
+                    id_formato_str = _normalizar_id(id_formato)
                     
                     if id_formato_str and id_formato_str != 'nan':
                         dict_conteo_formatos[id_formato_str] += 1
@@ -111,7 +135,7 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
                                 except IndexError:
                                     id_producto = None
                                 if id_producto is not None:
-                                    id_producto_str = str(id_producto).strip()
+                                    id_producto_str = _normalizar_id(id_producto)
                                     if id_producto_str and id_producto_str != 'nan':
                                         clave = f"{id_formato_str}|{id_producto_str}"
                                         dict_conteo_productos_por_formato[clave] += 1
@@ -128,6 +152,8 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
         print("  (Productos que NO están completos para su formato)")
         
         # Paso 2: Encontrar productos incompletos por formato (datos ya en memoria)
+        registros_ya = set()
+        duplicados_omitidos = 0
         for i in range(fila_inicio, ultima_fila + 1):
             try:
                 id_formato = gc(i, col_id_formato)
@@ -135,7 +161,7 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
                 nombre_lugar = gc(i, col_nombre_lugar)
                 
                 if id_formato is not None and id_lugar is not None:
-                    id_formato_str = str(id_formato).strip()
+                    id_formato_str = _normalizar_id(id_formato)
                     
                     if id_formato_str and id_formato_str != 'nan':
                         fila_datos = matriz_rows[i - 1]
@@ -149,13 +175,19 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
                                     nombre_producto = None
                                 
                                 if id_producto is not None:
-                                    id_producto_str = str(id_producto).strip()
+                                    id_producto_str = _normalizar_id(id_producto)
                                     clave = f"{id_formato_str}|{id_producto_str}"
                                     
                                     # Solo agregar si el producto NO está completo para su formato
                                     if (clave in dict_conteo_productos_por_formato and
                                         dict_conteo_productos_por_formato[clave] < dict_conteo_formatos[id_formato_str]):
-                                        
+                                        key_lugar = _normalizar_id(id_lugar)
+                                        key_producto = _normalizar_id(id_producto)
+                                        key_registro = (key_lugar, key_producto)
+                                        if key_registro in registros_ya:
+                                            duplicados_omitidos += 1
+                                            continue
+                                        registros_ya.add(key_registro)
                                         datos_salida.append({
                                             'ID_Lugar': id_lugar,
                                             'Nombre_Lugar': nombre_lugar,
@@ -166,10 +198,11 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
                 continue
         
         print(f"  Registros a escribir: {len(datos_salida):,}")
+        if duplicados_omitidos:
+            print(f"  Duplicados omitidos: {duplicados_omitidos:,}")
         
         if not datos_salida:
-            print("  ! No hay datos para escribir (todos los productos están completos)")
-            return True
+            print("  ! No hay datos para escribir (todos los productos están completos); se guardará la plantilla vacía con su estructura final")
         
         # Abrir archivo plantilla (sin modificar el original)
         print(f"\n  Abriendo plantilla: {os.path.basename(archivo_plantilla)}")
@@ -177,11 +210,16 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
         
         hoja_destino = "ProductosCatalogados_Lugar"
         if hoja_destino not in wb_plantilla.sheetnames:
-            print(f"  ✗ ERROR: No se encontró la hoja '{hoja_destino}'")
+            print(f"  [ERROR] ERROR: No se encontró la hoja '{hoja_destino}'")
             wb_plantilla.close()
             return False
         
         ws_destino = wb_plantilla[hoja_destino]
+
+        # Limpiar valores previos para evitar arrastre si la plantilla tiene datos.
+        for fila in range(2, ws_destino.max_row + 1):
+            for col in range(1, 7):  # Columnas A-F
+                ws_destino.cell(row=fila, column=col).value = None
         
         # Crear una copia de la plantilla con fecha/timestamp para no sobrescribir el original
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -237,11 +275,8 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
             # Columna E: Fecha de mañana (escribir como fecha con formato dd/mm/aaaa)
             celda_e = ws_destino.cell(row=fila_actual, column=5)
             celda_e.value = fecha_date
-            aplicar_estilo(celda_e, estilos_fila2.get(5))
-            try:
-                celda_e.number_format = "dd/mm/yyyy"
-            except Exception:
-                pass
+            aplicar_estilo(celda_e, estilos_fila2.get(5))   # Primero estilos generales
+            celda_e.number_format = "dd/mm/yyyy"    
             
             # Columna F: "INSERT"
             celda_f = ws_destino.cell(row=fila_actual, column=6)
@@ -253,7 +288,7 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
         # Guardar archivo con nombre nuevo (preservar la plantilla original intacta)
         wb_plantilla.save(ruta_archivo_salida)
         wb_plantilla.close()
-        print(f"  ✓ Archivo catalogado guardado en subcarpeta: {nombre_archivo_salida}")
+        print(f"  [OK] Archivo catalogado guardado en subcarpeta: {nombre_archivo_salida}")
         print(f"    (La plantilla original se mantiene intacta y no se escribe en la carpeta base)")
         
         print(f"\n  ¡Catalogación por tienda completada!")
@@ -262,7 +297,7 @@ def catalogacion_por_tienda(ruta_matriz, ruta_base, carpeta_trabajo):
         return True
         
     except Exception as e:
-        print(f"  ✗ ERROR al procesar: {e}")
+        print(f"  [ERROR] ERROR al procesar: {e}")
         import traceback
         traceback.print_exc()
         return False

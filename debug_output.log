@@ -1,0 +1,1161 @@
+================================================================================
+INICIANDO DEBUG DEL PIPELINE DE CATALOGACION
+================================================================================
+
+Archivo de entrada: C:\Users\katoH\Downloads\MATRIZ DE CATALOGACÓN actual 1 (4) (1).xlsx
+Layout products: C:\Users\katoH\Downloads\layout_products_188865 (5).xlsx
+Layout places: C:\Users\katoH\Downloads\layout_places_188865 (5).xlsx
+
+Verificando archivos...
+  C:\Users\katoH\Downloads\MATRIZ DE CATALOGACÓN actual 1 (4) (1).xlsx: ENCONTRADO
+  C:\Users\katoH\Downloads\layout_products_188865 (5).xlsx: ENCONTRADO
+  C:\Users\katoH\Downloads\layout_places_188865 (5).xlsx: ENCONTRADO
+
+================================================================================
+EJECUTANDO PIPELINE...
+================================================================================
+
+==================================================
+Procesando MATRIZ DE CATALOGACIÓN...
+==================================================
+
+Abriendo archivo: MATRIZ DE CATALOGACÓN actual 1 (4) (1).xlsx
+Hojas existentes: ['CONFIGURACIÓN DE ANAQUEL', 'Hoja1', 'DEFINICIÓN DE ANAQUEL', 'BD PRODUCTOS', 'BD MOBILIARIO', 'BD SUCURSALES', 'CONFIGURACIÓN DE ANAQUEL 1', 'PRODUCTOS', 'LUGARES', 'FORMATOS', 'CADENA CANAL FORMATO']
+
+--- Copiando hoja de respaldo ---
+  ! La hoja 'CONFIGURACIÓN DE ANAQUEL 1' ya existe, se omite la copia.
+
+--- Creando y limpiando hojas ---
+  ! La hoja 'PRODUCTOS' ya existe, se omite la creación.
+  ✓ Contenido limpiado en hoja 'PRODUCTOS'
+  ! La hoja 'LUGARES' ya existe, se omite la creación.
+  ✓ Contenido limpiado en hoja 'LUGARES'
+  ! La hoja 'FORMATOS' ya existe, se omite la creación.
+  ✓ Contenido limpiado en hoja 'FORMATOS'
+  ! La hoja 'CADENA CANAL FORMATO' ya existe, se omite la creación.
+  ✓ Contenido limpiado en hoja 'CADENA CANAL FORMATO'
+
+--- Copiando productos ---
+  Pre-cargando layout de productos en memoria...
+  ✓ Columna C normalizada (texto a número si aplica) desde fila 8 (104 celdas)
+  ✓ Filas copiadas: 479
+
+--- Copiando CONFIGURACIÓN DE ANAQUEL 1 a PRODUCTOS ---
+  ✓ Copiado rango G2:DD4 -> PRODUCTOS!E1 con ancho 102 columnas
+  ✓ Fila 1 replicada en fila 4 en columnas E en adelante
+
+--- Eliminando columnas dinámicamente (300ml + competencia) ---
+  ✓ Eliminadas 21 columnas en total
+      300ml (+extra): ['T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD']
+      Total (competencia): ['CT', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ', 'DA', 'DB']
+
+--- Llenando espacios vacíos con Productos de Sams ---
+  ! No se encontró el archivo 'Productos de Sams', se omite este paso.
+
+--- Pre-cargando layout_places en memoria ---
+  ✓ Hojas cargadas: ['Lugares', 'Formatos', 'Cadenas', 'Canales']
+
+--- Procesando hoja LUGARES ---
+  ✓ Copiadas 52329 filas de layout_places (cols A,B,F -> A,B,C)
+  ✓ Columna C convertida a número
+  ✓ Copiado columnas D,E de CONFIGURACIÓN DE ANAQUEL 1 (filas 4-50940) -> LUGARES D,E (50937 filas)
+  ✓ Encabezados con estilos aplicados (A-C verde, D-E amarillo, F-G azul)
+  ✓ Columnas F y G con BUSCARX en LUGARES (filas 2-50937)
+
+--- Procesando hoja CADENA CANAL FORMATO ---
+  ✓ Copiadas 488 filas de Formatos (A,B -> A,B)
+  ✓ Copiadas 340 filas de Cadenas (A,B -> C,D)
+  ✓ Copiadas 11 filas de Canales (A,B -> E,F)
+  ✓ Encabezados con estilos aplicados
+
+--- Procesando hoja FORMATOS ---
+  ✓ Copiadas 488 filas de 'Formatos' (A-C -> A-C, D -> E)
+  ✓ Copiadas 52329 filas de 'Lugares' (A,B,N,O,P -> G:K)
+    Mapa C->A construido: 52327 entradas
+    Mapa A->B construido: 52328 entradas
+  ✓ Copiadas 50937 filas de LUGARES F,G -> FORMATOS L,M (50936 calculadas)
+  ✓ FORMATOS completado con fórmulas y encabezados coloreados
+
+--- Guardando archivo intermedio ---
+  ✓ Archivo guardado (fórmulas escritas)
+
+--- Reabriendo archivo para procesar CONFIG ---
+
+--- Procesando CONFIGURACIÓN DE ANAQUEL ---
+  Insertando 4 columnas después de E...
+  ✓ 4 columnas insertadas (el contenido existente se recorrió)
+
+[DEBUG] DENTRO procesar_config: después de insert_cols(6,4)
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     <empty>                   Formato final   ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ID Sto          194416          185546          
+        13   M     <empty>                   Nombre Sto      ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   Nombre del pr... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT LI... 1               1               
+        16   P     <empty>                   ELECTROLIT NA... 1               1               
+        17   Q     <empty>                   ELECTROLIT UV... 1               1               
+        18   R     <empty>                   ELECTROLIT FR... 1               1               
+        19   S     <empty>                   ELECTROLIT CO... 1               1               
+        20   T     <empty>                   ELECTROLIT FR... 1               1               
+        21   U     <empty>                   ELECTROLIT MO... 1               1               
+        22   V     <empty>                   ELECTROLIT PI... 1               1               
+        23   W     <empty>                   ELECTROLIT GU... 1               1               
+        24   X     <empty>                   ELECTROLIT HO... 1               1               
+        25   Y     <empty>                   ELECTROLIT MA... 1               1               
+        26   Z     <empty>                   ELECTROLIT MA... <empty>         <empty>         
+        27   AA    <empty>                   ELECTROLIT TE... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT PO... 1               1               
+        29   AC    <empty>                   <empty>         1               1               
+        30   AD    <empty>                   ELECTROLIT NA... <empty>         <empty>         
+        31   AE    <empty>                   ELECTROLIT UV... 1               1               
+        32   AF    <empty>                   ELECTROLIT FR... 1               1               
+        33   AG    <empty>                   ELECTROLIT CO... 1               1               
+        34   AH    <empty>                   ELECTROLIT PI... <empty>         <empty>         
+        35   AI    <empty>                   ELECTROLIT MA... <empty>         <empty>         
+        36   AJ    <empty>                   ELECTROLIT MO... 1               1               
+        37   AK    <empty>                   ELECTROLIT LI... <empty>         <empty>         
+        38   AL    <empty>                   ELECTROLIT FR... 1               1               
+        39   AM    <empty>                   ELECTROLIT GU... <empty>         <empty>         
+        40   AN    <empty>                   ELECTROLIT PO... 1               1               
+        41   AO    <empty>                   <empty>         1               1               
+        42   AP    <empty>                   ELECTROLIT UV... 1               1               
+        43   AQ    <empty>                   ELECTROLIT FR... 1               1               
+        44   AR    <empty>                   ELECTROLIT CO... 1               1               
+        45   AS    <empty>                   ELECTROLIT FR... 1               1               
+        46   AT    <empty>                   ELECTROLIT MO... 1               1               
+        47   AU    <empty>                   ELECTROLIT MA... 1               1               
+        48   AV    <empty>                   ELECTROLIT PO... 1               1               
+        49   AW    <empty>                   ELECTROLIT LI... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIT NA... <empty>         <empty>         
+        51   AY    <empty>                   <empty>         1               1               
+        52   AZ    <empty>                   ELECTROLIFE Z... 1               1               
+        53   BA    <empty>                   ELECTROLIFE Z... 1               1               
+        54   BB    <empty>                   ELECTROLIFE Z... 1               1               
+        55   BC    <empty>                   ELECTROLIFE Z... 1               1               
+        56   BD    <empty>                   ELECTROLIFE Z... 1               1               
+        57   BE    <empty>                   ELECTROLIFE Z... 1               1               
+        58   BF    <empty>                   ELECTROLIFE Z... 1               1               
+        59   BG    <empty>                   <empty>         1               1               
+        60   BH    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        63   BK    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        64   BL    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        65   BM    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        66   BN    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        69   BQ    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        70   BR    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        71   BS    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        74   BV    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        75   BW    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        77   BY    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        78   BZ    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        79   CA    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        81   CC    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        82   CD    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        83   CE    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        84   CF    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        85   CG    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        86   CH    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        87   CI    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        88   CJ    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        89   CK    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        90   CL    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        91   CM    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        92   CN    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        93   CO    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        94   CP    <empty>                   AQUALIT CON E... <empty>         <empty>         
+        95   CQ    <empty>                   Aqualit 625ml   <empty>         <empty>         
+        96   CR    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        97   CS    <empty>                   Total Gatorad... 1               1               
+        98   CT    <empty>                   Total Suerox    1               1               
+        99   CU    <empty>                   Total Powerad... 1               1               
+        100  CV    <empty>                   Total Hydroli... 1               1               
+        101  CW    <empty>                   Total Flashly... 1               1               
+        102  CX    <empty>                   Total Solural   1               1               
+        103  CY    <empty>                   Total Pedialy... 1               1               
+        104  CZ    <empty>                   Total Gatorly... 1               1               
+        105  DA    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 6
+        Última columna con datos: 105 (DA)
+
+  Eliminando columnas Z a AK en CONFIGURACIÓN DE ANAQUEL...
+  ✓ Columnas Z a AK eliminadas
+
+[DEBUG] DENTRO procesar_config: después de delete_cols(26,12)
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     <empty>                   Formato final   ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ID Sto          194416          185546          
+        13   M     <empty>                   Nombre Sto      ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   Nombre del pr... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT LI... 1               1               
+        16   P     <empty>                   ELECTROLIT NA... 1               1               
+        17   Q     <empty>                   ELECTROLIT UV... 1               1               
+        18   R     <empty>                   ELECTROLIT FR... 1               1               
+        19   S     <empty>                   ELECTROLIT CO... 1               1               
+        20   T     <empty>                   ELECTROLIT FR... 1               1               
+        21   U     <empty>                   ELECTROLIT MO... 1               1               
+        22   V     <empty>                   ELECTROLIT PI... 1               1               
+        23   W     <empty>                   ELECTROLIT GU... 1               1               
+        24   X     <empty>                   ELECTROLIT HO... 1               1               
+        25   Y     <empty>                   ELECTROLIT MA... 1               1               
+        26   Z     <empty>                   ELECTROLIT FR... 1               1               
+        27   AA    <empty>                   ELECTROLIT GU... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT PO... 1               1               
+        29   AC    <empty>                   <empty>         1               1               
+        30   AD    <empty>                   ELECTROLIT UV... 1               1               
+        31   AE    <empty>                   ELECTROLIT FR... 1               1               
+        32   AF    <empty>                   ELECTROLIT CO... 1               1               
+        33   AG    <empty>                   ELECTROLIT FR... 1               1               
+        34   AH    <empty>                   ELECTROLIT MO... 1               1               
+        35   AI    <empty>                   ELECTROLIT MA... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   ELECTROLIT LI... <empty>         <empty>         
+        38   AL    <empty>                   ELECTROLIT NA... <empty>         <empty>         
+        39   AM    <empty>                   <empty>         1               1               
+        40   AN    <empty>                   ELECTROLIFE Z... 1               1               
+        41   AO    <empty>                   ELECTROLIFE Z... 1               1               
+        42   AP    <empty>                   ELECTROLIFE Z... 1               1               
+        43   AQ    <empty>                   ELECTROLIFE Z... 1               1               
+        44   AR    <empty>                   ELECTROLIFE Z... 1               1               
+        45   AS    <empty>                   ELECTROLIFE Z... 1               1               
+        46   AT    <empty>                   ELECTROLIFE Z... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        51   AY    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        52   AZ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        55   BC    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        56   BD    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        58   BF    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        59   BG    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        60   BH    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        65   BM    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        66   BN    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        71   BS    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        74   BV    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        75   BW    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        77   BY    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        82   CD    <empty>                   AQUALIT CON E... <empty>         <empty>         
+        83   CE    <empty>                   Aqualit 625ml   <empty>         <empty>         
+        84   CF    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        85   CG    <empty>                   Total Gatorad... 1               1               
+        86   CH    <empty>                   Total Suerox    1               1               
+        87   CI    <empty>                   Total Powerad... 1               1               
+        88   CJ    <empty>                   Total Hydroli... 1               1               
+        89   CK    <empty>                   Total Flashly... 1               1               
+        90   CL    <empty>                   Total Solural   1               1               
+        91   CM    <empty>                   Total Pedialy... 1               1               
+        92   CN    <empty>                   Total Gatorly... 1               1               
+        93   CO    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 6
+        Última columna con datos: 93 (CO)
+
+  Insertando 1 columna después de CH...
+  ✓ 1 columna insertada después de CH (contenido recorrido)
+
+[DEBUG] DENTRO procesar_config: después de insert_cols(col_ch+1,1)
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     <empty>                   Formato final   ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ID Sto          194416          185546          
+        13   M     <empty>                   Nombre Sto      ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   Nombre del pr... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT LI... 1               1               
+        16   P     <empty>                   ELECTROLIT NA... 1               1               
+        17   Q     <empty>                   ELECTROLIT UV... 1               1               
+        18   R     <empty>                   ELECTROLIT FR... 1               1               
+        19   S     <empty>                   ELECTROLIT CO... 1               1               
+        20   T     <empty>                   ELECTROLIT FR... 1               1               
+        21   U     <empty>                   ELECTROLIT MO... 1               1               
+        22   V     <empty>                   ELECTROLIT PI... 1               1               
+        23   W     <empty>                   ELECTROLIT GU... 1               1               
+        24   X     <empty>                   ELECTROLIT HO... 1               1               
+        25   Y     <empty>                   ELECTROLIT MA... 1               1               
+        26   Z     <empty>                   ELECTROLIT FR... 1               1               
+        27   AA    <empty>                   ELECTROLIT GU... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT PO... 1               1               
+        29   AC    <empty>                   <empty>         1               1               
+        30   AD    <empty>                   ELECTROLIT UV... 1               1               
+        31   AE    <empty>                   ELECTROLIT FR... 1               1               
+        32   AF    <empty>                   ELECTROLIT CO... 1               1               
+        33   AG    <empty>                   ELECTROLIT FR... 1               1               
+        34   AH    <empty>                   ELECTROLIT MO... 1               1               
+        35   AI    <empty>                   ELECTROLIT MA... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   ELECTROLIT LI... <empty>         <empty>         
+        38   AL    <empty>                   ELECTROLIT NA... <empty>         <empty>         
+        39   AM    <empty>                   <empty>         1               1               
+        40   AN    <empty>                   ELECTROLIFE Z... 1               1               
+        41   AO    <empty>                   ELECTROLIFE Z... 1               1               
+        42   AP    <empty>                   ELECTROLIFE Z... 1               1               
+        43   AQ    <empty>                   ELECTROLIFE Z... 1               1               
+        44   AR    <empty>                   ELECTROLIFE Z... 1               1               
+        45   AS    <empty>                   ELECTROLIFE Z... 1               1               
+        46   AT    <empty>                   ELECTROLIFE Z... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        51   AY    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        52   AZ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        55   BC    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        56   BD    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        58   BF    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        59   BG    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        60   BH    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        65   BM    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        66   BN    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        71   BS    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        74   BV    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        75   BW    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        77   BY    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        82   CD    <empty>                   AQUALIT CON E... <empty>         <empty>         
+        83   CE    <empty>                   Aqualit 625ml   <empty>         <empty>         
+        84   CF    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        85   CG    <empty>                   Total Gatorad... 1               1               
+        86   CH    <empty>                   Total Suerox    1               1               
+        87   CI    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        88   CJ    <empty>                   Total Powerad... 1               1               
+        89   CK    <empty>                   Total Hydroli... 1               1               
+        90   CL    <empty>                   Total Flashly... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 7
+        Última columna con datos: 94 (CP)
+
+  Copiando FORMATOS V,W -> F,G (calculando valores)...
+  ✓ Copiadas 50936 filas de FORMATOS V,W -> F,G
+
+[DEBUG] DENTRO procesar_config: después de copiar FORMATOS V,W->F,G
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     <empty>                   Formato final   ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ID Sto          194416          185546          
+        13   M     <empty>                   Nombre Sto      ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   Nombre del pr... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT LI... 1               1               
+        16   P     <empty>                   ELECTROLIT NA... 1               1               
+        17   Q     <empty>                   ELECTROLIT UV... 1               1               
+        18   R     <empty>                   ELECTROLIT FR... 1               1               
+        19   S     <empty>                   ELECTROLIT CO... 1               1               
+        20   T     <empty>                   ELECTROLIT FR... 1               1               
+        21   U     <empty>                   ELECTROLIT MO... 1               1               
+        22   V     <empty>                   ELECTROLIT PI... 1               1               
+        23   W     <empty>                   ELECTROLIT GU... 1               1               
+        24   X     <empty>                   ELECTROLIT HO... 1               1               
+        25   Y     <empty>                   ELECTROLIT MA... 1               1               
+        26   Z     <empty>                   ELECTROLIT FR... 1               1               
+        27   AA    <empty>                   ELECTROLIT GU... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT PO... 1               1               
+        29   AC    <empty>                   <empty>         1               1               
+        30   AD    <empty>                   ELECTROLIT UV... 1               1               
+        31   AE    <empty>                   ELECTROLIT FR... 1               1               
+        32   AF    <empty>                   ELECTROLIT CO... 1               1               
+        33   AG    <empty>                   ELECTROLIT FR... 1               1               
+        34   AH    <empty>                   ELECTROLIT MO... 1               1               
+        35   AI    <empty>                   ELECTROLIT MA... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   ELECTROLIT LI... <empty>         <empty>         
+        38   AL    <empty>                   ELECTROLIT NA... <empty>         <empty>         
+        39   AM    <empty>                   <empty>         1               1               
+        40   AN    <empty>                   ELECTROLIFE Z... 1               1               
+        41   AO    <empty>                   ELECTROLIFE Z... 1               1               
+        42   AP    <empty>                   ELECTROLIFE Z... 1               1               
+        43   AQ    <empty>                   ELECTROLIFE Z... 1               1               
+        44   AR    <empty>                   ELECTROLIFE Z... 1               1               
+        45   AS    <empty>                   ELECTROLIFE Z... 1               1               
+        46   AT    <empty>                   ELECTROLIFE Z... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        51   AY    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        52   AZ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        55   BC    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        56   BD    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        58   BF    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        59   BG    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        60   BH    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        65   BM    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        66   BN    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        71   BS    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        74   BV    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        75   BW    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        77   BY    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        82   CD    <empty>                   AQUALIT CON E... <empty>         <empty>         
+        83   CE    <empty>                   Aqualit 625ml   <empty>         <empty>         
+        84   CF    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        85   CG    <empty>                   Total Gatorad... 1               1               
+        86   CH    <empty>                   Total Suerox    1               1               
+        87   CI    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        88   CJ    <empty>                   Total Powerad... 1               1               
+        89   CK    <empty>                   Total Hydroli... 1               1               
+        90   CL    <empty>                   Total Flashly... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 7
+        Última columna con datos: 94 (CP)
+
+  Copiando LUGARES F,G -> H,I (valores calculados y pegados como texto)...
+  ✓ Copiadas 50936 filas de LUGARES F,G -> H,I
+
+[DEBUG] DENTRO procesar_config: después de copiar LUGARES F,G->H,I
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     <empty>                   Formato final   ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ID Sto          194416          185546          
+        13   M     <empty>                   Nombre Sto      ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   Nombre del pr... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT LI... 1               1               
+        16   P     <empty>                   ELECTROLIT NA... 1               1               
+        17   Q     <empty>                   ELECTROLIT UV... 1               1               
+        18   R     <empty>                   ELECTROLIT FR... 1               1               
+        19   S     <empty>                   ELECTROLIT CO... 1               1               
+        20   T     <empty>                   ELECTROLIT FR... 1               1               
+        21   U     <empty>                   ELECTROLIT MO... 1               1               
+        22   V     <empty>                   ELECTROLIT PI... 1               1               
+        23   W     <empty>                   ELECTROLIT GU... 1               1               
+        24   X     <empty>                   ELECTROLIT HO... 1               1               
+        25   Y     <empty>                   ELECTROLIT MA... 1               1               
+        26   Z     <empty>                   ELECTROLIT FR... 1               1               
+        27   AA    <empty>                   ELECTROLIT GU... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT PO... 1               1               
+        29   AC    <empty>                   <empty>         1               1               
+        30   AD    <empty>                   ELECTROLIT UV... 1               1               
+        31   AE    <empty>                   ELECTROLIT FR... 1               1               
+        32   AF    <empty>                   ELECTROLIT CO... 1               1               
+        33   AG    <empty>                   ELECTROLIT FR... 1               1               
+        34   AH    <empty>                   ELECTROLIT MO... 1               1               
+        35   AI    <empty>                   ELECTROLIT MA... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   ELECTROLIT LI... <empty>         <empty>         
+        38   AL    <empty>                   ELECTROLIT NA... <empty>         <empty>         
+        39   AM    <empty>                   <empty>         1               1               
+        40   AN    <empty>                   ELECTROLIFE Z... 1               1               
+        41   AO    <empty>                   ELECTROLIFE Z... 1               1               
+        42   AP    <empty>                   ELECTROLIFE Z... 1               1               
+        43   AQ    <empty>                   ELECTROLIFE Z... 1               1               
+        44   AR    <empty>                   ELECTROLIFE Z... 1               1               
+        45   AS    <empty>                   ELECTROLIFE Z... 1               1               
+        46   AT    <empty>                   ELECTROLIFE Z... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        51   AY    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        52   AZ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        55   BC    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        56   BD    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        58   BF    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        59   BG    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        60   BH    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        65   BM    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        66   BN    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        71   BS    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        74   BV    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        75   BW    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        77   BY    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        82   CD    <empty>                   AQUALIT CON E... <empty>         <empty>         
+        83   CE    <empty>                   Aqualit 625ml   <empty>         <empty>         
+        84   CF    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        85   CG    <empty>                   Total Gatorad... 1               1               
+        86   CH    <empty>                   Total Suerox    1               1               
+        87   CI    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        88   CJ    <empty>                   Total Powerad... 1               1               
+        89   CK    <empty>                   Total Hydroli... 1               1               
+        90   CL    <empty>                   Total Flashly... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 7
+        Última columna con datos: 94 (CP)
+
+  Copiando PRODUCTOS filas 4,5,6 desde E -> CONFIG filas 2,3,4 desde K...
+    Mapa de productos por SKU construido: 104 entradas
+    Mapa de productos por ID construido: 479 entradas
+  ✓ Copiadas 80 columnas de PRODUCTOS (filas 4-6 desde E) -> CONFIG (filas 2-4 desde K)
+
+[DEBUG] DENTRO procesar_config: después de copiar PRODUCTOS (filas 4-6)
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     Electrolit 625ml          ELECTROLIT LI... ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ELECTROLIT NA... 194416          185546          
+        13   M     <empty>                   ELECTROLIT UV... ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT CO... 1               1               
+        16   P     <empty>                   ELECTROLIT FR... 1               1               
+        17   Q     <empty>                   ELECTROLIT MO... 1               1               
+        18   R     <empty>                   ELECTROLIT PI... 1               1               
+        19   S     <empty>                   ELECTROLIT GU... 1               1               
+        20   T     <empty>                   ELECTROLIT HO... 1               1               
+        21   U     <empty>                   ELECTROLIT MA... 1               1               
+        22   V     <empty>                   ELECTROLIT MA... 1               1               
+        23   W     <empty>                   ELECTROLIT TE... 1               1               
+        24   X     <empty>                   ELECTROLIT PO... 1               1               
+        25   Y     <empty>                   <empty>         1               1               
+        26   Z     Electrolit 355ml          ELECTROLIT NA... 1               1               
+        27   AA    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT FR... 1               1               
+        29   AC    <empty>                   ELECTROLIT CO... 1               1               
+        30   AD    <empty>                   ELECTROLIT PI... 1               1               
+        31   AE    <empty>                   ELECTROLIT MA... 1               1               
+        32   AF    <empty>                   ELECTROLIT MO... 1               1               
+        33   AG    <empty>                   ELECTROLIT LI... 1               1               
+        34   AH    <empty>                   ELECTROLIT FR... 1               1               
+        35   AI    <empty>                   ELECTROLIT GU... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        38   AL    Electrolit 1000ml         ELECTROLIT UV... <empty>         <empty>         
+        39   AM    <empty>                   ELECTROLIT FR... 1               1               
+        40   AN    <empty>                   ELECTROLIT CO... 1               1               
+        41   AO    <empty>                   ELECTROLIT FR... 1               1               
+        42   AP    <empty>                   ELECTROLIT MO... 1               1               
+        43   AQ    <empty>                   ELECTROLIT MA... 1               1               
+        44   AR    <empty>                   ELECTROLIT PO... 1               1               
+        45   AS    <empty>                   ELECTROLIT LI... 1               1               
+        46   AT    <empty>                   ELECTROLIT NA... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    Electrolife zero 625ml    ELECTROLIFE Z... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        51   AY    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        52   AZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        55   BC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        56   BD    Electrolit Ped 300ml      ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        58   BF    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        59   BG    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        60   BH    Electrolit Ped 500ml      ELECTROLIT PE... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        65   BM    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        66   BN    Electrolit Six Pack       ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        71   BS    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        74   BV    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        75   BW    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        77   BY    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        82   CD    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        83   CE    Electrolit Fifteen pack   ELECTROLIT FI... <empty>         <empty>         
+        84   CF    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        85   CG    <empty>                   <empty>         1               1               
+        86   CH    Electrolife Zero Polvo    ELECTROLIFE Z... 1               1               
+        87   CI    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        88   CJ    <empty>                   ELECTROLIFE Z... 1               1               
+        89   CK    <empty>                   <empty>         1               1               
+        90   CL    Aqualit 625               AQUALIT CON E... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 5
+        Última columna con datos: 94 (CP)
+
+  ! No se pudo reubicar Aqualit: no se detectó Aqualit o Competencia
+
+[DEBUG] DENTRO procesar_config: después de reubicar_aqualit_junto_competencia
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     Electrolit 625ml          ELECTROLIT LI... ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ELECTROLIT NA... 194416          185546          
+        13   M     <empty>                   ELECTROLIT UV... ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT CO... 1               1               
+        16   P     <empty>                   ELECTROLIT FR... 1               1               
+        17   Q     <empty>                   ELECTROLIT MO... 1               1               
+        18   R     <empty>                   ELECTROLIT PI... 1               1               
+        19   S     <empty>                   ELECTROLIT GU... 1               1               
+        20   T     <empty>                   ELECTROLIT HO... 1               1               
+        21   U     <empty>                   ELECTROLIT MA... 1               1               
+        22   V     <empty>                   ELECTROLIT MA... 1               1               
+        23   W     <empty>                   ELECTROLIT TE... 1               1               
+        24   X     <empty>                   ELECTROLIT PO... 1               1               
+        25   Y     <empty>                   <empty>         1               1               
+        26   Z     Electrolit 355ml          ELECTROLIT NA... 1               1               
+        27   AA    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT FR... 1               1               
+        29   AC    <empty>                   ELECTROLIT CO... 1               1               
+        30   AD    <empty>                   ELECTROLIT PI... 1               1               
+        31   AE    <empty>                   ELECTROLIT MA... 1               1               
+        32   AF    <empty>                   ELECTROLIT MO... 1               1               
+        33   AG    <empty>                   ELECTROLIT LI... 1               1               
+        34   AH    <empty>                   ELECTROLIT FR... 1               1               
+        35   AI    <empty>                   ELECTROLIT GU... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        38   AL    Electrolit 1000ml         ELECTROLIT UV... <empty>         <empty>         
+        39   AM    <empty>                   ELECTROLIT FR... 1               1               
+        40   AN    <empty>                   ELECTROLIT CO... 1               1               
+        41   AO    <empty>                   ELECTROLIT FR... 1               1               
+        42   AP    <empty>                   ELECTROLIT MO... 1               1               
+        43   AQ    <empty>                   ELECTROLIT MA... 1               1               
+        44   AR    <empty>                   ELECTROLIT PO... 1               1               
+        45   AS    <empty>                   ELECTROLIT LI... 1               1               
+        46   AT    <empty>                   ELECTROLIT NA... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    Electrolife zero 625ml    ELECTROLIFE Z... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        51   AY    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        52   AZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        55   BC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        56   BD    Electrolit Ped 300ml      ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        58   BF    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        59   BG    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        60   BH    Electrolit Ped 500ml      ELECTROLIT PE... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        65   BM    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        66   BN    Electrolit Six Pack       ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        71   BS    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        74   BV    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        75   BW    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        77   BY    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        82   CD    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        83   CE    Electrolit Fifteen pack   ELECTROLIT FI... <empty>         <empty>         
+        84   CF    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        85   CG    <empty>                   <empty>         1               1               
+        86   CH    Electrolife Zero Polvo    ELECTROLIFE Z... 1               1               
+        87   CI    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        88   CJ    <empty>                   ELECTROLIFE Z... 1               1               
+        89   CK    <empty>                   <empty>         1               1               
+        90   CL    Aqualit 625               AQUALIT CON E... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 5
+        Última columna con datos: 94 (CP)
+
+  ✓ CONFIGURACIÓN DE ANAQUEL procesado completamente
+
+[DEBUG] DESPUÉS de procesar_configuracion_anaquel
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     Electrolit 625ml          ELECTROLIT LI... ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ELECTROLIT NA... 194416          185546          
+        13   M     <empty>                   ELECTROLIT UV... ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT CO... 1               1               
+        16   P     <empty>                   ELECTROLIT FR... 1               1               
+        17   Q     <empty>                   ELECTROLIT MO... 1               1               
+        18   R     <empty>                   ELECTROLIT PI... 1               1               
+        19   S     <empty>                   ELECTROLIT GU... 1               1               
+        20   T     <empty>                   ELECTROLIT HO... 1               1               
+        21   U     <empty>                   ELECTROLIT MA... 1               1               
+        22   V     <empty>                   ELECTROLIT MA... 1               1               
+        23   W     <empty>                   ELECTROLIT TE... 1               1               
+        24   X     <empty>                   ELECTROLIT PO... 1               1               
+        25   Y     <empty>                   <empty>         1               1               
+        26   Z     Electrolit 355ml          ELECTROLIT NA... 1               1               
+        27   AA    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT FR... 1               1               
+        29   AC    <empty>                   ELECTROLIT CO... 1               1               
+        30   AD    <empty>                   ELECTROLIT PI... 1               1               
+        31   AE    <empty>                   ELECTROLIT MA... 1               1               
+        32   AF    <empty>                   ELECTROLIT MO... 1               1               
+        33   AG    <empty>                   ELECTROLIT LI... 1               1               
+        34   AH    <empty>                   ELECTROLIT FR... 1               1               
+        35   AI    <empty>                   ELECTROLIT GU... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        38   AL    Electrolit 1000ml         ELECTROLIT UV... <empty>         <empty>         
+        39   AM    <empty>                   ELECTROLIT FR... 1               1               
+        40   AN    <empty>                   ELECTROLIT CO... 1               1               
+        41   AO    <empty>                   ELECTROLIT FR... 1               1               
+        42   AP    <empty>                   ELECTROLIT MO... 1               1               
+        43   AQ    <empty>                   ELECTROLIT MA... 1               1               
+        44   AR    <empty>                   ELECTROLIT PO... 1               1               
+        45   AS    <empty>                   ELECTROLIT LI... 1               1               
+        46   AT    <empty>                   ELECTROLIT NA... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    Electrolife zero 625ml    ELECTROLIFE Z... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        51   AY    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        52   AZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        55   BC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        56   BD    Electrolit Ped 300ml      ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        58   BF    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        59   BG    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        60   BH    Electrolit Ped 500ml      ELECTROLIT PE... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        65   BM    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        66   BN    Electrolit Six Pack       ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        71   BS    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        74   BV    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        75   BW    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        77   BY    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        82   CD    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        83   CE    Electrolit Fifteen pack   ELECTROLIT FI... <empty>         <empty>         
+        84   CF    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        85   CG    <empty>                   <empty>         1               1               
+        86   CH    Electrolife Zero Polvo    ELECTROLIFE Z... 1               1               
+        87   CI    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        88   CJ    <empty>                   ELECTROLIFE Z... 1               1               
+        89   CK    <empty>                   <empty>         1               1               
+        90   CL    Aqualit 625               AQUALIT CON E... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 5
+        Última columna con datos: 94 (CP)
+
+  ! No se detectaron columnas de competencia en CONFIG DE ANAQUEL
+
+[DEBUG] DESPUÉS de rellenar_unos_configuracion_anaquel
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     Electrolit 625ml          ELECTROLIT LI... ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ELECTROLIT NA... 194416          185546          
+        13   M     <empty>                   ELECTROLIT UV... ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT CO... 1               1               
+        16   P     <empty>                   ELECTROLIT FR... 1               1               
+        17   Q     <empty>                   ELECTROLIT MO... 1               1               
+        18   R     <empty>                   ELECTROLIT PI... 1               1               
+        19   S     <empty>                   ELECTROLIT GU... 1               1               
+        20   T     <empty>                   ELECTROLIT HO... 1               1               
+        21   U     <empty>                   ELECTROLIT MA... 1               1               
+        22   V     <empty>                   ELECTROLIT MA... 1               1               
+        23   W     <empty>                   ELECTROLIT TE... 1               1               
+        24   X     <empty>                   ELECTROLIT PO... 1               1               
+        25   Y     <empty>                   <empty>         1               1               
+        26   Z     Electrolit 355ml          ELECTROLIT NA... 1               1               
+        27   AA    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT FR... 1               1               
+        29   AC    <empty>                   ELECTROLIT CO... 1               1               
+        30   AD    <empty>                   ELECTROLIT PI... 1               1               
+        31   AE    <empty>                   ELECTROLIT MA... 1               1               
+        32   AF    <empty>                   ELECTROLIT MO... 1               1               
+        33   AG    <empty>                   ELECTROLIT LI... 1               1               
+        34   AH    <empty>                   ELECTROLIT FR... 1               1               
+        35   AI    <empty>                   ELECTROLIT GU... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        38   AL    Electrolit 1000ml         ELECTROLIT UV... <empty>         <empty>         
+        39   AM    <empty>                   ELECTROLIT FR... 1               1               
+        40   AN    <empty>                   ELECTROLIT CO... 1               1               
+        41   AO    <empty>                   ELECTROLIT FR... 1               1               
+        42   AP    <empty>                   ELECTROLIT MO... 1               1               
+        43   AQ    <empty>                   ELECTROLIT MA... 1               1               
+        44   AR    <empty>                   ELECTROLIT PO... 1               1               
+        45   AS    <empty>                   ELECTROLIT LI... 1               1               
+        46   AT    <empty>                   ELECTROLIT NA... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    Electrolife zero 625ml    ELECTROLIFE Z... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        51   AY    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        52   AZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        55   BC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        56   BD    Electrolit Ped 300ml      ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        58   BF    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        59   BG    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        60   BH    Electrolit Ped 500ml      ELECTROLIT PE... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        65   BM    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        66   BN    Electrolit Six Pack       ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        71   BS    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        74   BV    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        75   BW    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        77   BY    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        82   CD    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        83   CE    Electrolit Fifteen pack   ELECTROLIT FI... <empty>         <empty>         
+        84   CF    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        85   CG    <empty>                   <empty>         1               1               
+        86   CH    Electrolife Zero Polvo    ELECTROLIFE Z... 1               1               
+        87   CI    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        88   CJ    <empty>                   ELECTROLIFE Z... 1               1               
+        89   CK    <empty>                   <empty>         1               1               
+        90   CL    Aqualit 625               AQUALIT CON E... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 5
+        Última columna con datos: 94 (CP)
+
+
+--- Procesando filtro de formato (ID 4770) ---
+  ! No se detectaron columnas SAMS — sin cambios para formato 4770
+
+[DEBUG] DESPUÉS de procesar_filtro_formato
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     Electrolit 625ml          ELECTROLIT LI... ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ELECTROLIT NA... 194416          185546          
+        13   M     <empty>                   ELECTROLIT UV... ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT CO... 1               1               
+        16   P     <empty>                   ELECTROLIT FR... 1               1               
+        17   Q     <empty>                   ELECTROLIT MO... 1               1               
+        18   R     <empty>                   ELECTROLIT PI... 1               1               
+        19   S     <empty>                   ELECTROLIT GU... 1               1               
+        20   T     <empty>                   ELECTROLIT HO... 1               1               
+        21   U     <empty>                   ELECTROLIT MA... 1               1               
+        22   V     <empty>                   ELECTROLIT MA... 1               1               
+        23   W     <empty>                   ELECTROLIT TE... 1               1               
+        24   X     <empty>                   ELECTROLIT PO... 1               1               
+        25   Y     <empty>                   <empty>         1               1               
+        26   Z     Electrolit 355ml          ELECTROLIT NA... 1               1               
+        27   AA    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT FR... 1               1               
+        29   AC    <empty>                   ELECTROLIT CO... 1               1               
+        30   AD    <empty>                   ELECTROLIT PI... 1               1               
+        31   AE    <empty>                   ELECTROLIT MA... 1               1               
+        32   AF    <empty>                   ELECTROLIT MO... 1               1               
+        33   AG    <empty>                   ELECTROLIT LI... 1               1               
+        34   AH    <empty>                   ELECTROLIT FR... 1               1               
+        35   AI    <empty>                   ELECTROLIT GU... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        38   AL    Electrolit 1000ml         ELECTROLIT UV... <empty>         <empty>         
+        39   AM    <empty>                   ELECTROLIT FR... 1               1               
+        40   AN    <empty>                   ELECTROLIT CO... 1               1               
+        41   AO    <empty>                   ELECTROLIT FR... 1               1               
+        42   AP    <empty>                   ELECTROLIT MO... 1               1               
+        43   AQ    <empty>                   ELECTROLIT MA... 1               1               
+        44   AR    <empty>                   ELECTROLIT PO... 1               1               
+        45   AS    <empty>                   ELECTROLIT LI... 1               1               
+        46   AT    <empty>                   ELECTROLIT NA... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    Electrolife zero 625ml    ELECTROLIFE Z... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        51   AY    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        52   AZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        55   BC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        56   BD    Electrolit Ped 300ml      ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        58   BF    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        59   BG    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        60   BH    Electrolit Ped 500ml      ELECTROLIT PE... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        65   BM    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        66   BN    Electrolit Six Pack       ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        71   BS    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        74   BV    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        75   BW    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        77   BY    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        82   CD    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        83   CE    Electrolit Fifteen pack   ELECTROLIT FI... <empty>         <empty>         
+        84   CF    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        85   CG    <empty>                   <empty>         1               1               
+        86   CH    Electrolife Zero Polvo    ELECTROLIFE Z... 1               1               
+        87   CI    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        88   CJ    <empty>                   ELECTROLIFE Z... 1               1               
+        89   CK    <empty>                   <empty>         1               1               
+        90   CL    Aqualit 625               AQUALIT CON E... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 5
+        Última columna con datos: 94 (CP)
+
+
+--- Procesando producto general (detección dinámica) ---
+  Grupos detectados (8):
+  Grupo 'Electrolit 625ml': 14 sabores (K-X), 1 general(es) (Y)
+  Grupo 'Electrolit 355ml': 11 sabores (Z-AJ), 1 general(es) (AK)
+  Grupo 'Electrolit 1000ml': 9 sabores (AL-AT), 1 general(es) (AU)
+  Grupo 'Electrolife zero 625ml': 7 sabores (AV-BB), 1 general(es) (BC)
+  Grupo 'Electrolit Ped 300ml': 3 sabores (BD-BF), 1 general(es) (BG)
+  Grupo 'Electrolit Ped 500ml': 5 sabores (BH-BL), 1 general(es) (BM)
+  Grupo 'Electrolit Six Pack': 16 sabores (BN-CC), 1 general(es) (CD)
+  Grupo 'Electrolife Zero Polvo': 2 sabores (CH-CI), 2 general(es) (CJ, CK)
+  ✓ Total de celdas de general marcadas: 254939
+
+[DEBUG] DESPUÉS de procesar_producto_general
+        Columnas 11 (K) a 150 (ET)
+        Col  Letter Fila2                     Fila4           Fila5           Fila6          
+        -------------------------------------------------------------------------------------
+        11   K     Electrolit 625ml          ELECTROLIT LI... ABARROTERA AV... ABARROTERA AV... 
+        12   L     <empty>                   ELECTROLIT NA... 194416          185546          
+        13   M     <empty>                   ELECTROLIT UV... ABARROTERA AV... ABARROTERA AV... 
+        14   N     <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        15   O     <empty>                   ELECTROLIT CO... 1               1               
+        16   P     <empty>                   ELECTROLIT FR... 1               1               
+        17   Q     <empty>                   ELECTROLIT MO... 1               1               
+        18   R     <empty>                   ELECTROLIT PI... 1               1               
+        19   S     <empty>                   ELECTROLIT GU... 1               1               
+        20   T     <empty>                   ELECTROLIT HO... 1               1               
+        21   U     <empty>                   ELECTROLIT MA... 1               1               
+        22   V     <empty>                   ELECTROLIT MA... 1               1               
+        23   W     <empty>                   ELECTROLIT TE... 1               1               
+        24   X     <empty>                   ELECTROLIT PO... 1               1               
+        25   Y     <empty>                   <empty>         1               1               
+        26   Z     Electrolit 355ml          ELECTROLIT NA... 1               1               
+        27   AA    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        28   AB    <empty>                   ELECTROLIT FR... 1               1               
+        29   AC    <empty>                   ELECTROLIT CO... 1               1               
+        30   AD    <empty>                   ELECTROLIT PI... 1               1               
+        31   AE    <empty>                   ELECTROLIT MA... 1               1               
+        32   AF    <empty>                   ELECTROLIT MO... 1               1               
+        33   AG    <empty>                   ELECTROLIT LI... 1               1               
+        34   AH    <empty>                   ELECTROLIT FR... 1               1               
+        35   AI    <empty>                   ELECTROLIT GU... 1               1               
+        36   AJ    <empty>                   ELECTROLIT PO... 1               1               
+        37   AK    <empty>                   <empty>         1               1               
+        38   AL    Electrolit 1000ml         ELECTROLIT UV... <empty>         <empty>         
+        39   AM    <empty>                   ELECTROLIT FR... 1               1               
+        40   AN    <empty>                   ELECTROLIT CO... 1               1               
+        41   AO    <empty>                   ELECTROLIT FR... 1               1               
+        42   AP    <empty>                   ELECTROLIT MO... 1               1               
+        43   AQ    <empty>                   ELECTROLIT MA... 1               1               
+        44   AR    <empty>                   ELECTROLIT PO... 1               1               
+        45   AS    <empty>                   ELECTROLIT LI... 1               1               
+        46   AT    <empty>                   ELECTROLIT NA... 1               1               
+        47   AU    <empty>                   <empty>         1               1               
+        48   AV    Electrolife zero 625ml    ELECTROLIFE Z... <empty>         <empty>         
+        49   AW    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        50   AX    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        51   AY    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        52   AZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        53   BA    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        54   BB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        55   BC    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        56   BD    Electrolit Ped 300ml      ELECTROLIT PE... <empty>         <empty>         
+        57   BE    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        58   BF    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        59   BG    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        60   BH    Electrolit Ped 500ml      ELECTROLIT PE... <empty>         <empty>         
+        61   BI    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        62   BJ    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        63   BK    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        64   BL    <empty>                   ELECTROLIT PE... <empty>         <empty>         
+        65   BM    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        66   BN    Electrolit Six Pack       ELECTROLIT SI... <empty>         <empty>         
+        67   BO    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        68   BP    <empty>                   ELECTROLIT UV... <empty>         <empty>         
+        69   BQ    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        70   BR    <empty>                   ELECTROLIT CO... <empty>         <empty>         
+        71   BS    <empty>                   ELECTROLIT FR... <empty>         <empty>         
+        72   BT    <empty>                   ELECTROLIT MO... <empty>         <empty>         
+        73   BU    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        74   BV    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        75   BW    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        76   BX    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        77   BY    <empty>                   ELECTROLIT SI... <empty>         <empty>         
+        78   BZ    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        79   CA    <empty>                   BEBIDA HIDRAT... <empty>         <empty>         
+        80   CB    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        81   CC    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        82   CD    <empty>                   <empty>         <empty>         <empty>         ***EMPTY***
+        83   CE    Electrolit Fifteen pack   ELECTROLIT FI... <empty>         <empty>         
+        84   CF    <empty>                   ELECTROLIT FI... <empty>         <empty>         
+        85   CG    <empty>                   <empty>         1               1               
+        86   CH    Electrolife Zero Polvo    ELECTROLIFE Z... 1               1               
+        87   CI    <empty>                   ELECTROLIFE Z... <empty>         <empty>         
+        88   CJ    <empty>                   ELECTROLIFE Z... 1               1               
+        89   CK    <empty>                   <empty>         1               1               
+        90   CL    Aqualit 625               AQUALIT CON E... 1               1               
+        91   CM    <empty>                   Total Solural   1               1               
+        92   CN    <empty>                   Total Pedialy... 1               1               
+        93   CO    <empty>                   Total Gatorly... 1               1               
+        94   CP    <empty>                   Total Prime     1               1               
+        Columnas vacías encontradas: 4
+        Última columna con datos: 94 (CP)
+
+
+--- Guardando cambios ---
+✓ Archivo guardado: MATRIZ DE CATALOGACÓN actual 1 (4) (1).xlsx
+
+==================================================
+RESUMEN
+==================================================
+✓ Hoja de respaldo creada/mantenida: CONFIGURACIÓN DE ANAQUEL 1 (contenido preservado)
+✓ Hojas creadas/limpiadas: PRODUCTOS, LUGARES, FORMATOS, CADENA CANAL FORMATO
+✓ Productos copiados: {filas_copiadas} filas (cols A,B,E -> A,B,C desde fila 8)
+✓ Columna C normalizada (texto a número si aplica) en PRODUCTOS
+✓ Copiado CONFIGURACIÓN DE ANAQUEL 1 -> PRODUCTOS (G2.. hasta última col con datos, filas 2-4, con estilos)
+✓ PRODUCTOS procesado: fila 5 usa ID directo y fila 6 mantiene BUSCARX
+✓ LUGARES procesado: layout_places cols A,B,F -> A,B,C con ID directo en F y BUSCARX en G
+✓ CADENA CANAL FORMATO procesado: hojas Formatos, Cadenas, Canales copiadas
+✓ FORMATOS procesado: datos y fórmulas completados
+✓ CONFIGURACIÓN DE ANAQUEL procesado: 4 cols insertadas, datos de FORMATOS/LUGARES/PRODUCTOS copiados
+✓ Producto general marcado (incluye duplicado CH->CI)
+✓ Formato 4770 ajustado (CU-DG=1, CD=1, CJ-CT limpio)
+
+================================================================================
+[OK] PIPELINE COMPLETADO
+================================================================================
