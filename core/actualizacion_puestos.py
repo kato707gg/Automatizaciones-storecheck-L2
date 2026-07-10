@@ -318,7 +318,7 @@ def procesar_actualizacion_puestos(
         col_correo_p = _buscar_columna(ws_puestos, fila_enc_p, (
             "Correo electrónico", "Correo electronico", "Correo"
         )) or 5
-        col_edit = 22
+        col_edit = 23
 
         # Mapa correo -> puesto desde Cruces
         mapa_cruces = {}

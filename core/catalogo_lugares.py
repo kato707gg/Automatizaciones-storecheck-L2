@@ -9,8 +9,6 @@ y actualiza los campos que hayan cambiado:
     STORECHECK ID                   →  Código Interno  (clave de búsqueda)
   NOMBRE DE LA TIENDA / Nombre Lugar →  Nombre Lugar
   ESTADO                          →  tags_ESTADO  +  tags_region_precios
-  LATITUD                         →  Latitud
-  LONGITUD                        →  Longitud
   STATUS OPERACIONES / Activo     →  Activo  (ACTIVO→1, INACTIVO→0, 1/0 pasan directo)
     RUTA / RUTA CALENDARIO FORMAX   →  tags_CANAL + tags_REGION + tags_SUBREGION + tags_RUTA
 
@@ -50,14 +48,12 @@ _COLS_CLIENTE = [
     "CLIENTE SELL-IN (SAP)",  # opcional
     "RUTA CALENDARIO FORMAX",  # opcional
     "RUTA",               # opcional: alternativa a RUTA CALENDARIO FORMAX
-    "LATITUD",
-    "LONGITUD",
     "STATUS OPERACIONES",  # opcional: fuente para columna Activo
     "Activo",              # opcional: alternativa a STATUS OPERACIONES
 ]
 
 # Columnas que DEBEN existir (al menos una de cada grupo alternativo)
-_COLS_CLIENTE_REQUERIDAS = ["STORECHECK ID", "ESTADO", "LATITUD", "LONGITUD"]
+_COLS_CLIENTE_REQUERIDAS = ["STORECHECK ID", "ESTADO"]
 _COLS_NOMBRE_TIENDA = ["NOMBRE DE LA TIENDA", "Nombre Lugar"]  # al menos una
 _COLS_ACTIVO = ["STATUS OPERACIONES", "Activo"]                # ambas opcionales
 
@@ -80,8 +76,6 @@ _COLS_SISTEMA = [
     "tags_CLIENTE SELL-IN (SAP)",
     "tags_DETERMINANTE",
     "tags_FORMATO",
-    "Latitud",
-    "Longitud",
     "Activo",
     "Acción",
 ]
@@ -94,8 +88,6 @@ _MAPEO = {
     "ESTADO":  ["tags_ESTADO", "tags_region_precios"],
     "CANAL": "tags_CANAL 1",
     "CLIENTE SELL-IN (SAP)": "tags_CLIENTE SELL-IN (SAP)",
-    "LATITUD": "Latitud",
-    "LONGITUD": "Longitud",
 }
 
 # ── Mapeo extra SOLO para filas nuevas (ADD) ────────────────────────
@@ -453,8 +445,6 @@ def _cargar_datos_maestro_lugares(ruta_maestro: str) -> tuple[dict[str, dict[str
             "DETERMINANTE": ("DETERMINANTE",),
             "CLIENTE SELL-IN (SAP)": ("CLIENTE SELL-IN (SAP)",),
             "RUTA": ("RUTA CALENDARIO FORMAX", "RUTA"),
-            "LATITUD": ("LATITUD",),
-            "LONGITUD": ("LONGITUD",),
             "STATUS OPERACIONES": ("STATUS OPERACIONES",),
             "Activo": ("Activo", "ACTIVO"),
         })
@@ -779,13 +769,8 @@ def actualizar_catalogo_lugares(
                     if col_sis not in mapa_sistema:
                         continue
                     cell = ws_falt.cell(row=fila_destino, column=mapa_sistema[col_sis])
-                    if col_sis in ("Latitud", "Longitud"):
-                        try:
-                            cell.value = float(nuevo_val_str)
-                        except ValueError:
-                            cell.value = nuevo_val_str
-                    else:
-                        cell.value = nuevo_val_str
+                    # No forzar conversión a float para Latitud/Longitud; asignar tal cual
+                    cell.value = nuevo_val_str
 
             # Mapeos extra que solo aplican para archivo de altas (ADD)
             for fuentes_cliente, col_sis in _MAPEO_ADD:
@@ -911,14 +896,8 @@ def actualizar_catalogo_lugares(
                 if nuevo_val_str == actual_str:
                     continue  # Sin cambio
 
-                # Intentar preservar el tipo numérico para Latitud/Longitud
-                if col_sis in ("Latitud", "Longitud"):
-                    try:
-                        cell.value = float(nuevo_val_str)
-                    except ValueError:
-                        cell.value = nuevo_val_str
-                else:
-                    cell.value = nuevo_val_str
+                # No forzar conversión numérica para Latitud/Longitud; asignar tal cual
+                cell.value = nuevo_val_str
 
                 fila_modificada = True
 
