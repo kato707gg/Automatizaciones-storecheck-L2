@@ -1,0 +1,12 @@
+{
+  "fecha": "2026-08-03 17:37:48",
+  "total": 3,
+  "exitosos": [],
+  "ignorados": [],
+  "fallidos": {
+    "Canal=ABARROTEROS | Cadena=ABARROTERA FUENTES | Formato=ABARROTERA FUENTES": "El backend respondio 500: The format cannot be removed",
+    "Canal=ABARROTEROS | Cadena=ABARROTERA AVILA | Formato=ABARROTERA AVILA": "El backend respondio 500: The format cannot be removed",
+    "Canal=ABARROTEROS | Cadena=ABARROTERA 2 DE ENERO | Formato=ABARROTERA 2 DE ENERO": "El backend respondio 500: The format cannot be removed"
+  },
+  "archivo_resultado": "C:\\Users\\katoH\\OneDrive\\Documentos\\Proyectos personales\\Automatizaciones storecheck L2\\docs\\runs\\20260803_173748_automatizacion5_seleccion.json"
+}

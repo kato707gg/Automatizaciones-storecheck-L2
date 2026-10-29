@@ -139,6 +139,13 @@ class VistaSelectorFormato(QWidget):
         )
         self._toggle_activate.toggled.connect(self._update_toggle_label)
 
+        self._chk_trace_network = QCheckBox("Capturar red de Chrome")
+        self._chk_trace_network.setCursor(Qt.PointingHandCursor)
+        self._chk_trace_network.setToolTip(
+            "Guarda la traza de red de Chrome en un JSON para diagnosticar requests y eventos internos."
+        )
+        self._chk_trace_network.setStyleSheet("color: #2F3A40; font-size: 11px;")
+
         self._lbl_toggle_mode = QLabel("Agregar")
         self._lbl_toggle_mode.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self._lbl_toggle_mode.setStyleSheet("color: #0098C4;")
@@ -147,6 +154,7 @@ class VistaSelectorFormato(QWidget):
         toggle_row.addWidget(self._lbl_toggle_mode)
         toggle_row.addStretch()
         outer.addLayout(toggle_row)
+        outer.addWidget(self._chk_trace_network)
         outer.addSpacing(14)
 
         src_row = QHBoxLayout()
@@ -482,7 +490,11 @@ class VistaSelectorFormato(QWidget):
 
             try:
                 self._session = WebSelectionSession(use_profile=False)
-                self._session.start(url=TARGET_URL, status_cb=self._status.setText)
+                self._session.start(
+                    url=TARGET_URL,
+                    status_cb=self._status.setText,
+                    trace_network=self._chk_trace_network.isChecked(),
+                )
             except Exception as exc:
                 self._show_error(str(exc))
                 self._session = None
@@ -520,6 +532,7 @@ class VistaSelectorFormato(QWidget):
                 progress_cb=self._on_progress,
                 status_cb=self._status.setText,
                 output_dir="docs/runs",
+                trace_network=self._chk_trace_network.isChecked(),
             )
             self._show_success(summary)
         except Exception as exc:

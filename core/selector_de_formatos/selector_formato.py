@@ -8,6 +8,9 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 import openpyxl
 
@@ -163,12 +166,121 @@ class WebSelectionSession:
     def __init__(self, use_profile: bool = True):
         self._use_profile = use_profile
         self._browser = None
+        self._network_trace_enabled = False
 
     @property
     def browser(self):
         return self._browser
 
-    def start(self, url: str, status_cb: StatusCallback | None = None) -> None:
+    def _browser_cookie_header(self) -> str:
+        cookies = []
+        for cookie in self._browser.get_cookies():
+            name = cookie.get("name")
+            value = cookie.get("value")
+            if name and value is not None:
+                cookies.append(f"{name}={value}")
+        return "; ".join(cookies)
+
+    def _send_place_classification_action(self, format_id: str, action: str) -> tuple[int, str]:
+        if action == "ADD_FORMAT_ON_PROJECT":
+            endpoint = "/placeClassification/saveOnProjectPlace"
+        elif action == "DELETE_FORMAT_ON_PROJECT":
+            endpoint = "/placeClassification/deleteOnProjectPlace"
+        else:
+            raise ValueError(f"Accion no soportada: {action}")
+
+        base_url = self._browser.current_url.split("/placeClassification/")[0]
+        url = f"{base_url}{endpoint}"
+        payload = urlencode({"formatId": str(format_id)}).encode("utf-8")
+
+        headers = {
+            "Accept": "*/*",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "Origin": base_url,
+            "Referer": self._browser.current_url,
+            "Cookie": self._browser_cookie_header(),
+        }
+
+        try:
+            user_agent = self._browser.execute_script("return navigator.userAgent")
+            if user_agent:
+                headers["User-Agent"] = user_agent
+        except Exception:
+            pass
+
+        try:
+            self._browser.set_script_timeout(20)
+        except Exception:
+            pass
+
+        try:
+            result = self._browser.execute_async_script(
+                """
+                const [targetUrl, formatId, actionName, timeoutMs, done] = arguments;
+                if (!window.jQuery || !window.jQuery.ajax) {
+                    done({error: 'jQuery.ajax no esta disponible en la pagina', actionName});
+                    return;
+                }
+
+                const timer = setTimeout(() => {
+                    done({error: 'timeout de AJAX en la pagina', actionName});
+                }, timeoutMs);
+
+                window.jQuery.ajax({
+                    method: 'POST',
+                    url: targetUrl,
+                    data: { formatId },
+                    timeout: timeoutMs,
+                })
+                .done((data, _textStatus, jqXHR) => {
+                    clearTimeout(timer);
+                    done({status: jqXHR.status, text: typeof data === 'string' ? data : JSON.stringify(data)});
+                })
+                .fail((jqXHR, textStatus, errorThrown) => {
+                    clearTimeout(timer);
+                    done({
+                        status: jqXHR && typeof jqXHR.status === 'number' ? jqXHR.status : 0,
+                        text: jqXHR && jqXHR.responseText ? jqXHR.responseText : '',
+                        error: errorThrown || textStatus || 'AJAX fallo sin detalle',
+                        actionName,
+                    });
+                });
+                """,
+                url,
+                str(format_id),
+                action,
+                30000,
+            )
+
+            if isinstance(result, dict):
+                if result.get("error") and not result.get("status"):
+                    raise RuntimeError(f"La peticion AJAX fallo en {endpoint}: {result['error']}")
+
+                status = int(result.get("status") or 0)
+                text = str(result.get("text") or "")
+                return status, text
+        except Exception:
+            pass
+
+        request = Request(url=url, data=payload, headers=headers, method="POST")
+
+        try:
+            with urlopen(request, timeout=30) as response:
+                body = response.read().decode("utf-8", errors="replace")
+                return response.getcode(), body
+        except HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            return exc.code, body
+        except URLError as exc:
+            raise RuntimeError(f"No se pudo enviar la peticion a {endpoint}: {exc}") from exc
+
+    def start(
+        self,
+        url: str,
+        status_cb: StatusCallback | None = None,
+        trace_network: bool = False,
+    ) -> None:
         try:
             from selenium import webdriver
             from selenium.webdriver.chrome.options import Options
@@ -183,8 +295,11 @@ class WebSelectionSession:
         if status_cb:
             status_cb("Abriendo Chrome...")
 
+        self._network_trace_enabled = trace_network
         chrome_options = Options()
         chrome_options.add_argument("--window-size=1920,1080")
+        if trace_network:
+            chrome_options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
         if self._use_profile:
             profile_path = _resolve_chrome_profile_path()
             chrome_options.add_argument(f"user-data-dir={profile_path}")
@@ -209,6 +324,8 @@ class WebSelectionSession:
         progress_cb: ProgressCallback | None = None,
         status_cb: StatusCallback | None = None,
         output_dir: str = "docs/runs",
+        trace_network: bool = False,
+        network_trace_path: str | None = None,
     ) -> SelectionSummary:
         if self._browser is None:
             raise RuntimeError("No hay sesion de Chrome activa. Primero abre la sesion.")
@@ -220,7 +337,6 @@ class WebSelectionSession:
             from selenium.webdriver.common.by import By
             from selenium.webdriver.common.action_chains import ActionChains
             from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
             from selenium.common.exceptions import TimeoutException
         except Exception as exc:  # pragma: no cover - depende del entorno local
             raise RuntimeError(
@@ -235,11 +351,7 @@ class WebSelectionSession:
         ignored: list[str] = []
         failed: list[tuple[str, str]] = []
 
-        wait = WebDriverWait(self._browser, 25)
         item_wait = WebDriverWait(self._browser, 6)
-
-        max_retries = 1
-        post_confirm_wait_s = 2.5
 
         def _normalize_action(text: str) -> str:
             value = text.strip().casefold()
@@ -258,11 +370,12 @@ class WebSelectionSession:
                 return _normalize_text(parts[0]), _normalize_text(parts[1])
             return "", ""
 
-        def _find_matching_span(item: FormatTarget):
+        def _find_matching_spans(item: FormatTarget):
             target_format = _normalize_text(item.format_name)
             target_channel = _normalize_text(_normalize_id(item.channel_id))
             target_chain = _normalize_text(_normalize_id(item.chain_id))
 
+            candidates = []
             spans = self._browser.find_elements(By.XPATH, "//span[@id='formatDsc']")
             for span in spans:
                 try:
@@ -283,105 +396,36 @@ class WebSelectionSession:
                     chain_match = target_chain in {attr_chain, text_chain}
 
                     if channel_match and chain_match:
-                        return span
+                        candidates.append(span)
                 except Exception:
                     continue
 
-            return None
+            return candidates
 
-        def _safe_click(element):
+        def _find_matching_item(item: FormatTarget, expected_action: str):
             try:
-                element.click()
-            except Exception:
-                self._browser.execute_script("arguments[0].click();", element)
-
-        def _visible_modal_buttons():
-            forms = self._browser.find_elements(By.ID, "confirmationFrm")
-            for form in forms:
-                if not form.is_displayed():
-                    continue
-
-                confirm = None
-                cancel = None
-                buttons = form.find_elements(By.TAG_NAME, "button")
-
-                for button in buttons:
-                    text = button.text.strip().casefold()
-                    button_type = (button.get_attribute("type") or "").casefold()
-                    classes = (button.get_attribute("class") or "").casefold()
-                    button_id = (button.get_attribute("id") or "").casefold()
-
-                    if cancel is None and (
-                        "cancelar" in text
-                        or button_id == "cancelconfirmationbtn"
-                        or "dismiss" in (button.get_attribute("data-dismiss") or "").casefold()
-                    ):
-                        cancel = button
-
-                    if confirm is None and (
-                        "agregar" in text
-                        or "deseleccionar" in text
-                        or "aceptar" in text
-                        or button_type == "submit"
-                        or "btn-modal" in classes
-                    ):
-                        confirm = button
-
-                if confirm is not None:
-                    return form, confirm, cancel
-
-            return None
-
-        def _wait_modal_open():
-            return wait.until(lambda _driver: _visible_modal_buttons())
-
-        def _wait_modal_closed(timeout: float = 12.0):
-            end_time = time.time() + timeout
-            while time.time() < end_time:
-                if _visible_modal_buttons() is None:
-                    return
-                time.sleep(0.1)
-            raise TimeoutError("El modal no cerro despues de confirmar/cancelar.")
-
-        def _close_modal_safely():
-            modal_data = _visible_modal_buttons()
-            if modal_data is None:
-                return
-            _form, _confirm, cancel = modal_data
-            if cancel is not None:
-                _safe_click(cancel)
-                _wait_modal_closed()
-
-        def _open_modal_for_item(item: FormatTarget):
-            try:
-                span = item_wait.until(lambda _driver: _find_matching_span(item))
+                spans = item_wait.until(lambda _driver: _find_matching_spans(item))
             except TimeoutException as exc:
                 raise RuntimeError(
                     "No se encontro tarjeta que coincida con Canal/Cadena/Formato."
                 ) from exc
 
-            heading = span.find_element(By.XPATH, "./ancestor::h6[1]")
-            self._browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", heading)
-            time.sleep(0.2)
+            if not spans:
+                raise RuntimeError("No se encontro tarjeta que coincida con Canal/Cadena/Formato.")
 
-            # Algunos formatos solo abren confirmacion con doble clic.
-            open_attempts = [
-                lambda: ActionChains(self._browser).double_click(heading).perform(),
-                lambda: (heading.click(), heading.click()),
-                lambda: (span.click(), span.click()),
-            ]
-
-            last_error: Exception | None = None
-            for trigger in open_attempts:
+            candidates = []
+            for span in spans:
                 try:
-                    trigger()
-                    return _wait_modal_open()
-                except Exception as exc:
-                    last_error = exc
+                    li = span.find_element(By.XPATH, "./ancestor::li[1]")
+                    candidates.append((span, li))
+                except Exception:
+                    continue
 
-            if last_error is not None:
-                raise last_error
-            raise RuntimeError("No se pudo abrir el modal del formato.")
+            if not candidates:
+                raise RuntimeError("No se encontro tarjeta que coincida con Canal/Cadena/Formato.")
+
+            chosen = candidates[0]
+            return chosen[0], chosen[1]
 
         for index, item in enumerate(items, start=1):
             item_label = item.label()
@@ -391,57 +435,29 @@ class WebSelectionSession:
                 progress_cb(index, len(items), item_label)
 
             try:
-                expected_after = "deseleccionar" if expected_action == "agregar" else "agregar"
-                applied = False
-
-                for attempt in range(max_retries + 1):
-                    try:
-                        _form, confirm, _cancel = _open_modal_for_item(item)
-                    except RuntimeError as exc:
-                        if "No se encontro tarjeta" in str(exc):
-                            failed.append((item_label, str(exc)))
-                            applied = True
-                            break
-                        raise
-
-                    current_action = _normalize_action(confirm.text)
-
-                    if current_action != expected_action:
-                        ignored.append(item_label)
-                        _close_modal_safely()
-                        applied = True
-                        break
-
-                    _safe_click(confirm)
-                    try:
-                        _wait_modal_closed()
-                    except Exception:
-                        # Si no cierra visualmente, seguimos con una espera breve para dar tiempo al backend.
-                        pass
-                    time.sleep(post_confirm_wait_s)
-
-                    # Verifica si realmente cambió el estado del formato.
-                    _verify_form, verify_confirm, _verify_cancel = _open_modal_for_item(item)
-                    verify_action = _normalize_action(verify_confirm.text)
-                    _close_modal_safely()
-
-                    if verify_action == expected_after:
-                        success.append(item_label)
-                        applied = True
-                        break
-
-                    if attempt < max_retries and status_cb:
-                        status_cb(
-                            f"Reintentando {item_label} ({attempt + 1}/{max_retries}) porque el cambio no se reflejo todavia..."
-                        )
-
-                if not applied:
-                    failed.append((item_label, "No se reflejo el cambio despues de reintentos."))
-            except Exception as exc:
                 try:
-                    _close_modal_safely()
-                except Exception:
-                    pass
+                    _span, li = _find_matching_item(item, expected_action)
+                except RuntimeError as exc:
+                    if "No se encontro tarjeta" in str(exc):
+                        failed.append((item_label, str(exc)))
+                        continue
+                    raise
+
+                item_id = (li.get_attribute("data-element-id") or "").strip()
+
+                action_name = "ADD_FORMAT_ON_PROJECT" if expected_action == "agregar" else "DELETE_FORMAT_ON_PROJECT"
+
+                if not item_id:
+                    failed.append((item_label, "No se pudo obtener el identificador del formato."))
+                    continue
+
+                status_code, response_text = self._send_place_classification_action(item_id, action_name)
+
+                if 200 <= status_code < 300:
+                    success.append(item_label)
+                else:
+                    failed.append((item_label, f"El backend respondio {status_code}: {response_text[:200]}"))
+            except Exception as exc:
                 failed.append((item_label, str(exc)))
 
         os.makedirs(output_dir, exist_ok=True)
@@ -456,6 +472,18 @@ class WebSelectionSession:
         )
         with open(output_path, "w", encoding="utf-8") as fp:
             json.dump(summary.to_dict(), fp, ensure_ascii=False, indent=2)
+
+        if trace_network and self._network_trace_enabled:
+            trace_path = network_trace_path or os.path.splitext(output_path)[0] + "_network.json"
+            try:
+                performance_logs = self._browser.get_log("performance")
+            except Exception:
+                performance_logs = []
+
+            os.makedirs(os.path.dirname(trace_path) or ".", exist_ok=True)
+            with open(trace_path, "w", encoding="utf-8") as trace_fp:
+                json.dump(performance_logs, trace_fp, ensure_ascii=False, indent=2)
+
         return summary
 
 
@@ -467,16 +495,20 @@ def run_web_selection(
     output_dir: str = "docs/runs",
     progress_cb: ProgressCallback | None = None,
     status_cb: StatusCallback | None = None,
+    trace_network: bool = False,
+    network_trace_path: str | None = None,
 ) -> SelectionSummary:
     session = WebSelectionSession(use_profile=use_profile)
     try:
-        session.start(url=url, status_cb=status_cb)
+        session.start(url=url, status_cb=status_cb, trace_network=trace_network)
         return session.run_selection(
             items=items,
             target_button=target_button,
             progress_cb=progress_cb,
             status_cb=status_cb,
             output_dir=output_dir,
+            trace_network=trace_network,
+            network_trace_path=network_trace_path,
         )
     finally:
         session.close()

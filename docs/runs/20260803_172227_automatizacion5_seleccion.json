@@ -1,0 +1,12 @@
+{
+  "fecha": "2026-08-03 17:22:27",
+  "total": 3,
+  "exitosos": [],
+  "ignorados": [
+    "Canal=CONVENIENCIA | Cadena=SUPER Q | Formato=CONVENIENCIA",
+    "Canal=FARMACIA | Cadena=EQUILIBRIO FARMACEUTICO | Formato=EQUILIBRIO FARMACEUTICO",
+    "Canal=DROGUEROS | Cadena=BAZAR | Formato=BAZAR"
+  ],
+  "fallidos": {},
+  "archivo_resultado": "C:\\Users\\katoH\\OneDrive\\Documentos\\Proyectos personales\\Automatizaciones storecheck L2\\docs\\runs\\20260803_172227_automatizacion5_seleccion.json"
+}

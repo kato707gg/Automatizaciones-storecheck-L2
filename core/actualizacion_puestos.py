@@ -18,7 +18,6 @@ from openpyxl.styles import Font, PatternFill
 
 
 _ALLOWED_PROFILES = {
-    "PROMOTOR COOR- PRO",
     "PROMOTOR- PRO",
     "SUPERVISOR- PRO",
     "COORDINADOR- PRO",
@@ -158,6 +157,17 @@ def _limpiar_duplicado(texto: object) -> str:
     return raw
 
 
+def _agregar_sufijo_duplicado(texto: object) -> str:
+    base = _limpiar_duplicado(texto)
+    if not base:
+        return ""
+    return f"{base} DUPLICADO"
+
+
+def _normalizar_estado(valor: object) -> str:
+    return _normalizar_texto(valor)
+
+
 def _subrayar_fila(ws, row_idx: int, col_inicio: int, col_fin: int):
     marcador = PatternFill(start_color="FFF59D", end_color="FFF59D", fill_type="solid")
     for col in range(col_inicio, col_fin + 1):
@@ -258,15 +268,12 @@ def procesar_actualizacion_puestos(
             col_nombre_completo = _buscar_columna(ws, fila_enc, ("Nombre completo", "Nombre Completo"))
             col_nombre = _buscar_columna(ws, fila_enc, ("Nombre", "Nombre(s)")) or 8
             col_apellido = _buscar_columna(ws, fila_enc, ("Apellido", "Apellidos")) or 9
-            col_perfil = _buscar_columna(ws, fila_enc, ("Perfil",))
             col_puesto = _buscar_columna(ws, fila_enc, ("Puesto",))
             col_encargado = _buscar_columna(ws, fila_enc, config["encargado_header"])
 
             for fila in ws.iter_rows(min_row=fila_datos, values_only=True):
-                perfil = _valor_col(fila, col_perfil)
-                puesto = _valor_col(fila, col_puesto)
-                perfil_fallback = fila[2] if len(fila) >= 3 else None
-                if not (_perfil_permitido(perfil) or _perfil_permitido(puesto) or _perfil_permitido(perfil_fallback)):
+                perfil = _valor_col(fila, 3)
+                if not _perfil_permitido(perfil):
                     continue
 
                 puestos = _valor_col(fila, col_ruta)
@@ -317,8 +324,10 @@ def procesar_actualizacion_puestos(
         col_puesto_p = _buscar_columna(ws_puestos, fila_enc_p, "Puesto") or 2
         col_correo_p = _buscar_columna(ws_puestos, fila_enc_p, (
             "Correo electrónico", "Correo electronico", "Correo"
-        )) or 5
-        col_edit = 23
+        )) or 6
+        col_nombre_p = 2
+        col_estado_v = 22
+        col_accion_w = 23
 
         # Mapa correo -> puesto desde Cruces
         mapa_cruces = {}
@@ -329,10 +338,16 @@ def procesar_actualizacion_puestos(
                 mapa_cruces[correo] = puesto
 
         puestos_catalogo = set()
+        correos_catalogo = set()
         for fila in ws_puestos.iter_rows(min_row=fila_datos_p, values_only=True):
             puesto_actual = _limpiar_duplicado(_valor_col(fila, col_puesto_p))
             if puesto_actual:
                 puestos_catalogo.add(_normalizar_texto(puesto_actual))
+
+            correo_actual = _valor_col(fila, col_correo_p)
+            correo_actual_norm = _normalizar_correo(correo_actual)
+            if correo_actual_norm:
+                correos_catalogo.add(correo_actual_norm)
 
         max_row_p = ws_puestos.max_row
         for row_idx in range(fila_datos_p, max_row_p + 1):
@@ -350,14 +365,101 @@ def procesar_actualizacion_puestos(
             puesto_actual_base = _limpiar_duplicado(puesto_actual_raw)
             if puesto_actual_base != str(puesto_en_cruces).strip():
                 ws_puestos.cell(row=row_idx, column=col_puesto_p, value=puesto_en_cruces)
-                ws_puestos.cell(row=row_idx, column=col_edit, value="EDIT")
+                ws_puestos.cell(row=row_idx, column=col_accion_w, value="EDIT")
 
-        # ── Subrayar puestos nuevos en Cruces ───────────────────────
+        registros_por_nombre = {}
+        for row_idx in range(fila_datos_p, max_row_p + 1):
+            nombre_val = ws_puestos.cell(row=row_idx, column=col_nombre_p).value
+            nombre_base = _limpiar_duplicado(nombre_val)
+            if not nombre_base:
+                continue
+
+            registros_por_nombre.setdefault(_normalizar_texto(nombre_base), []).append({
+                "row": row_idx,
+                "nombre": nombre_base,
+                "correo": ws_puestos.cell(row=row_idx, column=col_correo_p).value,
+                "correo_norm": _normalizar_correo(ws_puestos.cell(row=row_idx, column=col_correo_p).value),
+                "estado": ws_puestos.cell(row=row_idx, column=col_estado_v).value,
+            })
+
+        for registros in registros_por_nombre.values():
+            if len(registros) < 2:
+                continue
+
+            registros_por_correo = {}
+            for registro in registros:
+                correo_norm = registro["correo_norm"]
+                if not correo_norm:
+                    continue
+                registros_por_correo.setdefault(correo_norm, []).append(registro)
+
+            for registros_correo in registros_por_correo.values():
+                if len(registros_correo) < 2:
+                    continue
+
+                estados = {
+                    _normalizar_estado(registro["estado"])
+                    for registro in registros_correo
+                    if registro["estado"] not in (None, "")
+                }
+                if "ASIGNADO" in estados and "NO ASIGNADO" in estados:
+                    for registro in registros_correo:
+                        estado_norm = _normalizar_estado(registro["estado"])
+                        if estado_norm == "NO ASIGNADO":
+                            ws_puestos.cell(
+                                row=registro["row"],
+                                column=col_nombre_p,
+                                value=_agregar_sufijo_duplicado(registro["nombre"]),
+                            )
+                    for registro in registros_correo:
+                        ws_puestos.cell(row=registro["row"], column=col_accion_w, value="IGNORE")
+
+            for registro in registros:
+                correo_norm = registro["correo_norm"]
+                if not correo_norm:
+                    ws_puestos.cell(
+                        row=registro["row"],
+                        column=col_nombre_p,
+                        value=_agregar_sufijo_duplicado(registro["nombre"]),
+                    )
+                    continue
+
+                if correo_norm not in mapa_cruces:
+                    ws_puestos.cell(
+                        row=registro["row"],
+                        column=col_nombre_p,
+                        value=_agregar_sufijo_duplicado(registro["nombre"]),
+                    )
+                    ws_puestos.cell(row=registro["row"], column=col_accion_w, value="UNASSIGN")
+
+        # ── Filtrar perfiles permitidos en hoja Puestos (columna C) ─
+        # Solo deben permanecer en el archivo final las filas cuyo
+        # perfil (columna C) sea PROMOTOR- PRO, SUPERVISOR- PRO o
+        # COORDINADOR- PRO. El resto se elimina de la hoja.
+        col_perfil_puestos = 3  # Columna C
+        filas_a_eliminar = []
+        for row_idx in range(fila_datos_p, ws_puestos.max_row + 1):
+            perfil_val = ws_puestos.cell(row=row_idx, column=col_perfil_puestos).value
+            if not _perfil_permitido(perfil_val):
+                filas_a_eliminar.append(row_idx)
+
+        for row_idx in reversed(filas_a_eliminar):
+            ws_puestos.delete_rows(row_idx)
+
+        # ── Subrayar puestos/correos nuevos en Cruces ───────────────
+        # Se pinta la fila si el Puesto (columna A) o el Correo
+        # (columna B) no existen ya en la hoja Puestos.
         for row_idx in range(2, ws_cruces.max_row + 1):
             puesto_cruces = ws_cruces.cell(row=row_idx, column=1).value
-            if not puesto_cruces:
+            correo_cruces = ws_cruces.cell(row=row_idx, column=2).value
+
+            if not puesto_cruces and not correo_cruces:
                 continue
-            if _normalizar_texto(puesto_cruces) not in puestos_catalogo:
+
+            puesto_nuevo = bool(puesto_cruces) and _normalizar_texto(puesto_cruces) not in puestos_catalogo
+            correo_nuevo = bool(correo_cruces) and _normalizar_correo(correo_cruces) not in correos_catalogo
+
+            if puesto_nuevo or correo_nuevo:
                 _subrayar_fila(ws_cruces, row_idx, 1, 6)
 
         # Ajuste simple de anchos para facilitar la lectura.

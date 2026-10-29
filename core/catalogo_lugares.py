@@ -6,7 +6,7 @@ y actualiza los campos que hayan cambiado:
 
   Cliente (Maestro)               →  Sistema (layout_places)
   ────────────────────────────────────────────────────────────
-    STORECHECK ID                   →  Código Interno  (clave de búsqueda)
+    STORECHECK ID                   →  Código Retailer  (clave de búsqueda)
   NOMBRE DE LA TIENDA / Nombre Lugar →  Nombre Lugar
   ESTADO                          →  tags_ESTADO  +  tags_region_precios
   STATUS OPERACIONES / Activo     →  Activo  (ACTIVO→1, INACTIVO→0, 1/0 pasan directo)
@@ -59,6 +59,8 @@ _COLS_ACTIVO = ["STATUS OPERACIONES", "Activo"]                # ambas opcionale
 
 # ── Columnas del sistema (layout_places) ─────────────────────────────
 _COLS_SISTEMA = [
+    "Código Retailer",
+    "Codigo Retailer",
     "Código Interno",
     "Nombre Lugar",
     "Cadena",
@@ -67,6 +69,7 @@ _COLS_SISTEMA = [
     "Area Nielsen",
     "tags_ESTADO",
     "tags_ESTATUS",
+    "tags_ESTATUS_PREVIO",
     "tags_CANAL",
     "tags_REGION",
     "tags_RUTA",
@@ -83,7 +86,7 @@ _COLS_SISTEMA = [
 # ── Mapeo: columna cliente → columna(s) sistema ───────────────────────
 # El valor puede ser un str o una lista de str cuando se actualiza en varios lugares.
 # Nota: "NOMBRE DE LA TIENDA" → "Nombre Lugar" se maneja por separado porque
-# el nombre canónico se construye como: Código Interno + Cadena (catálogo) + Nombre Tienda.
+# el nombre canónico se construye como: Código Retailer + Cadena (catálogo) + Nombre Tienda.
 _MAPEO = {
     "ESTADO":  ["tags_ESTADO", "tags_region_precios"],
     "CANAL": "tags_CANAL 1",
@@ -716,22 +719,52 @@ def actualizar_catalogo_lugares(
     fila_enc_sistema = _encontrar_fila_encabezados(ws_sistema, _COLS_SISTEMA)
     print(f"  Fila de encabezados (layout_places): {fila_enc_sistema}")
 
-    mapa_sistema = _mapear_indices(ws_sistema, fila_enc_sistema, set(_COLS_SISTEMA))
+    # "Código Interno" quedó como columna Extra en el layout nuevo. Se conserva
+    # como alias únicamente para layouts antiguos que todavía no tienen
+    # "Código Retailer"; cuando ambas columnas existen, siempre se usa Retailer.
+    alias_sistema = {
+        columna: (columna,)
+        for columna in _COLS_SISTEMA
+    }
+    alias_sistema["Código Retailer"] = (
+        "Código Retailer",
+        "Codigo Retailer",
+        "Código Interno",
+        "Codigo Interno",
+    )
+    mapa_sistema = _mapear_indices_alias(
+        ws_sistema,
+        fila_enc_sistema,
+        alias_sistema,
+    )
+
+    # La resolución anterior depende del orden de las columnas. Reaplicar la
+    # prioridad de nombres garantiza que la columna Extra nunca sea usada si
+    # el layout también contiene Código Retailer.
+    for encabezado_preferido in ("Código Retailer", "Codigo Retailer"):
+        col_retailer = _mapear_indice_exacto(
+            ws_sistema,
+            fila_enc_sistema,
+            encabezado_preferido,
+        )
+        if col_retailer is not None:
+            mapa_sistema["Código Retailer"] = col_retailer
+            break
 
     # Verificar columnas críticas del sistema
-    for col_req in ("Código Interno", "Acción"):
+    for col_req in ("Código Retailer", "Acción"):
         if col_req not in mapa_sistema:
             wb_sistema.close()
             raise RuntimeError(f"No se encontró la columna '{col_req}' en layout_places.\n"
                                f"Encabezados detectados en fila {fila_enc_sistema}.")
 
-    col_codigo_int = mapa_sistema["Código Interno"]
+    col_codigo_retailer = mapa_sistema["Código Retailer"]
     col_accion     = mapa_sistema["Acción"]
 
     # ── 3b. Detectar códigos del Maestro que NO están en el catálogo ──
     codigos_catalogo: set[str] = set()
     for fila in ws_sistema.iter_rows(min_row=fila_enc_sistema + 1, values_only=True):
-        val = fila[col_codigo_int - 1]
+        val = fila[col_codigo_retailer - 1]
         if val is not None:
             codigos_catalogo.add(_normalizar(val))
 
@@ -757,8 +790,8 @@ def actualizar_catalogo_lugares(
 
             datos = datos_cliente.get(branch_id, {})
 
-            if "Código Interno" in mapa_sistema:
-                ws_falt.cell(row=fila_destino, column=mapa_sistema["Código Interno"]).value = branch_id
+            if "Código Retailer" in mapa_sistema:
+                ws_falt.cell(row=fila_destino, column=mapa_sistema["Código Retailer"]).value = branch_id
 
             for col_cliente, destino in _MAPEO.items():
                 nuevo_val_str = datos.get(col_cliente, "")
@@ -855,6 +888,7 @@ def actualizar_catalogo_lugares(
     sin_cambios    = 0
     no_encontrados = 0
     filas_update = []
+    filas_salida = []
 
     # Pre-cargar todas las filas de datos como objetos de celda en memoria
     # Esto evita llamadas repetidas a ws.cell(row, col) que son lentas
@@ -862,7 +896,7 @@ def actualizar_catalogo_lugares(
 
     for fila_cells in todas_las_filas:
 
-        codigo_raw = fila_cells[col_codigo_int - 1].value
+        codigo_raw = fila_cells[col_codigo_retailer - 1].value
         if codigo_raw is None:
             continue
         codigo_str = _normalizar(codigo_raw)
@@ -875,6 +909,13 @@ def actualizar_catalogo_lugares(
 
         datos = datos_cliente[codigo_str]
         fila_modificada = False
+
+        # Conservar el estatus original del layout antes de actualizarlo.
+        estatus_previo = None
+        if "tags_ESTATUS" in mapa_sistema:
+            estatus_previo = fila_cells[mapa_sistema["tags_ESTATUS"] - 1].value
+        if "tags_ESTATUS_PREVIO" in mapa_sistema:
+            fila_cells[mapa_sistema["tags_ESTATUS_PREVIO"] - 1].value = estatus_previo
 
         # Recorrer el mapeo cliente → sistema
         for col_cliente, destino in _MAPEO.items():
@@ -959,18 +1000,26 @@ def actualizar_catalogo_lugares(
                         cell_estatus.value = nuevo_estatus_txt
                         fila_modificada = True
 
+        if ("tags_ESTATUS" in mapa_sistema and
+                "tags_ESTATUS_PREVIO" in mapa_sistema and
+                _normalizar(estatus_previo) != _normalizar(
+                    fila_cells[mapa_sistema["tags_ESTATUS"] - 1].value)):
+            fila_modificada = True
+
         if fila_modificada:
             fila_cells[col_accion - 1].value = "UPDATE"
             actualizados += 1
             filas_update.append([cell.value for cell in fila_cells])
         else:
+            fila_cells[col_accion - 1].value = "IGNORE"
             sin_cambios += 1
+        filas_salida.append([cell.value for cell in fila_cells])
 
-    # ── 4. Conservar solo filas UPDATE en archivo final ──────────────
+    # ── 4. Conservar todas las filas coincidentes en archivo final ───
     filas_en_hoja = ws_sistema.max_row
     if filas_en_hoja > fila_enc_sistema:
         ws_sistema.delete_rows(fila_enc_sistema + 1, filas_en_hoja - fila_enc_sistema)
-    for fila in filas_update:
+    for fila in filas_salida:
         ws_sistema.append(fila)
 
     # ── 5. Guardar ────────────────────────────────────────────────────
@@ -986,12 +1035,12 @@ def actualizar_catalogo_lugares(
     wb_sistema.close()
 
     # ── 6. Dividir en partes si supera el límite ──────────────────────
-    total_filas_datos = len(filas_update)
+    total_filas_datos = len(filas_salida)
     if total_filas_datos > _LIMITE_REGISTROS:
         print(f"  El catálogo tiene {total_filas_datos:,} registros → "
               f"dividiendo en partes de {_LIMITE_REGISTROS:,}…")
 
-        filas_datos = filas_update
+        filas_datos = filas_salida
 
         ext = os.path.splitext(ruta_salida)[1]
         nombre_base = "layout_places_actualizado"
@@ -1019,4 +1068,3 @@ def actualizar_catalogo_lugares(
         print(f"  Archivo unificado conservado: {os.path.basename(ruta_salida)}")
 
     return True
-

@@ -1,0 +1,11 @@
+{
+  "fecha": "2026-08-03 18:31:57",
+  "total": 2,
+  "exitosos": [],
+  "ignorados": [],
+  "fallidos": {
+    "Canal=AUTOSERVICIOS | Cadena=CHEDRAUI | Formato=02 CHEDRAUI AB": "The read operation timed out",
+    "Canal=AUTOSERVICIOS | Cadena=CHEDRAUI | Formato=03 CHEDRAUI CD": "The read operation timed out"
+  },
+  "archivo_resultado": "C:\\Users\\katoH\\OneDrive\\Documentos\\Proyectos personales\\Automatizaciones storecheck L2\\docs\\runs\\20260803_183157_automatizacion5_seleccion.json"
+}

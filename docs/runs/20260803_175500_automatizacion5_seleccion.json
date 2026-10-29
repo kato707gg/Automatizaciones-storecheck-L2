@@ -1,0 +1,11 @@
+{
+  "fecha": "2026-08-03 17:55:00",
+  "total": 2,
+  "exitosos": [],
+  "ignorados": [
+    "Canal=AUTOSERVICIOS | Cadena=CHEDRAUI | Formato=02 CHEDRAUI AB",
+    "Canal=AUTOSERVICIOS | Cadena=CHEDRAUI | Formato=03 CHEDRAUI CD"
+  ],
+  "fallidos": {},
+  "archivo_resultado": "C:\\Users\\katoH\\OneDrive\\Documentos\\Proyectos personales\\Automatizaciones storecheck L2\\docs\\runs\\20260803_175500_automatizacion5_seleccion.json"
+}

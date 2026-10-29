@@ -13,70 +13,13 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from copy import copy
 import os
+import unicodedata
 
 # Importar módulo de catalogación por formato
 from .formato import catalogacion_solo_por_formato
 from .tienda import catalogacion_por_tienda
 from .filtro_formato import rellenar_unos_configuracion_anaquel, procesar_filtro_formato
 from .producto_general import procesar_producto_general
-
-
-
-
-# ---------------------------------------------------------------------------
-# FUNCIÓN DE DEBUG PARA INSPECCIONAR COLUMNAS
-# ---------------------------------------------------------------------------
-
-def _debug_dump_config_columnas(ws_config, nombre_paso, col_desde=11, col_hasta=200):
-    """Imprime el estado de las columnas de CONFIG para debug.
-    
-    Muestra fila 2 (marcadores) y filas 4-6 (datos de productos) 
-    para identificar dónde aparecen columnas vacías.
-    """
-    print(f"\n[DEBUG] {nombre_paso}")
-    print(f"        Columnas {col_desde} ({get_column_letter(col_desde)}) a {col_hasta} ({get_column_letter(col_hasta)})")
-    print(f"        {'Col':<4} {'Letter':<5} {'Fila2':<25} {'Fila4':<15} {'Fila5':<15} {'Fila6':<15}")
-    print("        " + "-" * 85)
-    
-    empty_count = 0
-    last_non_empty_col = None
-    
-    for col_idx in range(col_desde, min(col_hasta + 1, ws_config.max_column + 1)):
-        val2 = ws_config.cell(row=2, column=col_idx).value
-        val4 = ws_config.cell(row=4, column=col_idx).value
-        val5 = ws_config.cell(row=5, column=col_idx).value
-        val6 = ws_config.cell(row=6, column=col_idx).value
-        
-        # Abreviar valores largos
-        def trunc(v, length=20):
-            if v is None:
-                return "<empty>"
-            s = str(v)[:length]
-            if len(str(v)) > length:
-                s = s + "..."
-            return s
-        
-        v2_str = trunc(val2, 23)
-        v4_str = trunc(val4, 13)
-        v5_str = trunc(val5, 13)
-        v6_str = trunc(val6, 13)
-        
-        is_empty_col = all(v is None for v in [val2, val4, val5, val6])
-        marker = "***EMPTY***" if is_empty_col else ""
-        
-        print(f"        {col_idx:<4} {get_column_letter(col_idx):<5} {v2_str:<25} {v4_str:<15} {v5_str:<15} {v6_str:<15} {marker}")
-        
-        if is_empty_col:
-            empty_count += 1
-        else:
-            last_non_empty_col = col_idx
-    
-    print(f"        Columnas vacías encontradas: {empty_count}")
-    if last_non_empty_col:
-        print(f"        Última columna con datos: {last_non_empty_col} ({get_column_letter(last_non_empty_col)})")
-    print()
-
-
 # ---------------------------------------------------------------------------
 # Utilidades de carga rápida
 # ---------------------------------------------------------------------------
@@ -181,6 +124,24 @@ def normalizar_columna_c_productos(ws, fila_inicio):
 
 def _normalizar_texto(texto):
     return " ".join(str(texto).strip().lower().split())
+
+
+def _normalizar_encabezado(texto):
+    texto = unicodedata.normalize("NFKD", str(texto))
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    return " ".join(texto.strip().upper().split())
+
+
+def _mapear_columnas_por_nombre(rows, nombres):
+    """Devuelve índices 0-based de columnas usando la primera fila como encabezado."""
+    if not rows:
+        return {}
+    nombres_norm = {_normalizar_encabezado(nombre): nombre for nombre in nombres}
+    return {
+        nombres_norm[_normalizar_encabezado(valor)]: indice
+        for indice, valor in enumerate(rows[0])
+        if valor is not None and _normalizar_encabezado(valor) in nombres_norm
+    }
 
 
 def _buscar_columna_por_texto(ws, col_inicio, texto_objetivo, filas=(2, 4)):
@@ -944,14 +905,28 @@ def procesar_lugares(wb, ruta_layout_places, hojas_lp=None):
         print("  [ERROR] ERROR: No se encontró la hoja 'Lugares' en layout_places.")
         return False
 
-    # Copiar columnas A, B, F desde layout_places a LUGARES columnas A, B, C
+    columnas_lugares = _mapear_columnas_por_nombre(
+        rows_layout,
+        ("ID Lugar", "Nombre Lugar", "Código Retailer"),
+    )
+    faltantes = [nombre for nombre in ("ID Lugar", "Nombre Lugar", "Código Retailer")
+                 if nombre not in columnas_lugares]
+    if faltantes:
+        print(f"  [ERROR] Faltan columnas en layout_places/Lugares: {', '.join(faltantes)}")
+        return False
+
+    col_id_lugar = columnas_lugares["ID Lugar"]
+    col_nombre = columnas_lugares["Nombre Lugar"]
+    col_retailer = columnas_lugares["Código Retailer"]
+
+    # Copiar columnas por nombre desde layout_places a LUGARES columnas A, B, C
     fila_destino = 1
     filas_copiadas = 0
 
     for fila_data in rows_layout:
-        val_a = fila_data[0] if len(fila_data) > 0 else None
-        val_b = fila_data[1] if len(fila_data) > 1 else None
-        val_f = fila_data[5] if len(fila_data) > 5 else None
+        val_a = fila_data[col_id_lugar] if col_id_lugar < len(fila_data) else None
+        val_b = fila_data[col_nombre] if col_nombre < len(fila_data) else None
+        val_f = fila_data[col_retailer] if col_retailer < len(fila_data) else None
         fila = fila_destino  # para la condición de fila > 1
 
         # Omitir filas completamente vacías (después del encabezado)
@@ -979,7 +954,7 @@ def procesar_lugares(wb, ruta_layout_places, hojas_lp=None):
         fila_destino += 1
         filas_copiadas += 1
 
-    print(f"  [OK] Copiadas {filas_copiadas} filas de layout_places (cols A,B,F -> A,B,C)")
+    print(f"  [OK] Copiadas {filas_copiadas} filas de layout_places por nombre -> A,B,C")
     print("  [OK] Columna C convertida a número")
 
     # Copiar columnas D y E desde fila 4 de CONFIGURACIÓN DE ANAQUEL 1 a LUGARES D y E
@@ -1222,17 +1197,30 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
     ws_dst.cell(row=1, column=4).value = "chain"   # col D
     ws_dst.cell(row=1, column=6).value = "channel" # col F
 
-    # --- Bloque 2: Lugares (layout_places hoja "Lugares" columnas A,B,N,O,P -> G:K) ---
+    # --- Bloque 2: Lugares (layout_places hoja "Lugares" -> G:K) ---
     rows_lug_lp = hojas_lp.get("Lugares", [])
     if not rows_lug_lp:
         print("  [ERROR] ERROR: No se encontró la hoja 'Lugares' en layout_places.")
         return False
 
+    columnas_lugares_formatos = _mapear_columnas_por_nombre(
+        rows_lug_lp,
+        ("ID Lugar", "Nombre Lugar", "Canal", "Cadena", "Formato"),
+    )
+    faltantes = [nombre for nombre in
+                 ("ID Lugar", "Nombre Lugar", "Canal", "Cadena", "Formato")
+                 if nombre not in columnas_lugares_formatos]
+    if faltantes:
+        print(f"  [ERROR] Faltan columnas en layout_places/Lugares: {', '.join(faltantes)}")
+        return False
+
+    columnas_salida = [columnas_lugares_formatos[nombre] for nombre in
+                       ("ID Lugar", "Nombre Lugar", "Canal", "Cadena", "Formato")]
+
     filas_lug_layout = 0
     fila_dest = 1
     for fi, fila_data in enumerate(rows_lug_lp, start=1):
-        cols_necesarias = [0, 1, 13, 14, 15]  # A(0),B(1),N(13),O(14),P(15) (0-based)
-        vals = [fila_data[c] if c < len(fila_data) else None for c in cols_necesarias]
+        vals = [fila_data[c] if c < len(fila_data) else None for c in columnas_salida]
         if fi > 1 and all(val is None or str(val).strip() == "" for val in vals):
             continue
         for idx, val in enumerate(vals):
@@ -1240,7 +1228,7 @@ def procesar_formatos(wb, ruta_layout_places, hojas_lp=None):
         fila_dest += 1
         filas_lug_layout += 1
 
-    print(f"  [OK] Copiadas {filas_lug_layout} filas de 'Lugares' (A,B,N,O,P -> G:K)")
+    print(f"  [OK] Copiadas {filas_lug_layout} filas de 'Lugares' por nombre -> G:K")
 
     # --- Bloque 3: LUGARES (matriz) columnas F,G -> L,M ---
     # L se recalcula desde D -> C -> A para evitar copiar la fórmula de F.
@@ -1460,13 +1448,11 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
     print("  Insertando 4 columnas después de E...")
     ws_config.insert_cols(6, 4)  # Inserta 4 columnas a partir de la columna 6 (F)
     print("  [OK] 4 columnas insertadas (el contenido existente se recorrió)")
-    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de insert_cols(6,4)", col_desde=11, col_hasta=150)
 
     # 2. Eliminar columnas Z a AK (26 a 37) después de la inserción previa
     print("  Eliminando columnas Z a AK en CONFIGURACIÓN DE ANAQUEL...")
     ws_config.delete_cols(26, 12)  # Z (26) a AK (37) inclusive
     print("  [OK] Columnas Z a AK eliminadas")
-    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de delete_cols(26,12)", col_desde=11, col_hasta=150)
 
     # 3. No insertar columna adicional en CH.
     # Esa inserción desalinea el bloque de Polvos respecto a los datos originales.
@@ -1623,7 +1609,6 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
         filas_copiadas_formatos += 1
     
     print(f"  [OK] Copiadas {filas_copiadas_formatos} filas de FORMATOS V,W -> F,G")
-    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de copiar FORMATOS V,W->F,G", col_desde=11, col_hasta=150)
     
     # ========== COPIAR LUGARES F,G -> H,I ==========
     # F = XLOOKUP(D, C:C, A:A)
@@ -1658,7 +1643,6 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
         filas_copiadas_lugares += 1
     
     print(f"  [OK] Copiadas {filas_copiadas_lugares} filas de LUGARES F,G -> H,I")
-    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de copiar LUGARES F,G->H,I", col_desde=11, col_hasta=150)
     
     # ========== COPIAR PRODUCTOS filas 4,5,6 -> CONFIG filas 2,3,4 desde K ==========
     # E = col 5 en PRODUCTOS
@@ -1798,11 +1782,9 @@ def procesar_configuracion_anaquel(wb, ruta_matriz):
         cols_copiadas += 1
     
     print(f"  [OK] Copiadas {cols_copiadas} columnas de PRODUCTOS (filas 4-6 desde E) -> CONFIG (filas 2-4 desde K)")
-    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de copiar PRODUCTOS (filas 4-6)", col_desde=11, col_hasta=150)
 
     # Reubicar Aqualit para que quede inmediatamente a la izquierda de Competencia
     reubicar_aqualit_junto_competencia(ws_config, col_dest_min)
-    #_debug_dump_config_columnas(ws_config, "DENTRO procesar_config: después de reubicar_aqualit_junto_competencia", col_desde=11, col_hasta=150)
     
     print("  [OK] CONFIGURACIÓN DE ANAQUEL procesado completamente")
     return True
@@ -1904,23 +1886,18 @@ def procesar_matriz(ruta_matriz, ruta_layout_products, ruta_layout_places, ruta_
     
     # 14. Procesar hoja CONFIGURACIÓN DE ANAQUEL
     procesar_configuracion_anaquel(wb, ruta_matriz)
-    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de procesar_configuracion_anaquel", col_desde=11, col_hasta=150)
 
     # 14b. Rellenar columnas CJ-CT con 1s antes del filtro
     rellenar_unos_configuracion_anaquel(wb)
-    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de rellenar_unos_configuracion_anaquel", col_desde=11, col_hasta=150)
 
     # 15. Aplicar filtro de formato (ID 4770)
     procesar_filtro_formato(wb)
-    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de procesar_filtro_formato", col_desde=11, col_hasta=150)
 
     # 15b. Restaurar valores de Aqualit desde la hoja respaldo original
     restaurar_aqualit_desde_respaldo(wb)
-    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de restaurar_aqualit_desde_respaldo", col_desde=11, col_hasta=150)
 
     # 16. Marcar producto general
     procesar_producto_general(wb)
-    #_debug_dump_config_columnas(wb["CONFIGURACIÓN DE ANAQUEL"], "DESPUÉS de procesar_producto_general", col_desde=11, col_hasta=150)
     
     # Guardar el archivo
     print("\n--- Guardando cambios ---")
@@ -1938,7 +1915,7 @@ def procesar_matriz(ruta_matriz, ruta_layout_products, ruta_layout_places, ruta_
     print("[OK] Columna C normalizada (texto a número si aplica) en PRODUCTOS")
     print("[OK] Copiado CONFIGURACIÓN DE ANAQUEL 1 -> PRODUCTOS (G2.. hasta última col con datos, filas 2-4, con estilos)")
     print("[OK] PRODUCTOS procesado: fila 5 usa ID directo y fila 6 mantiene BUSCARX")
-    print("[OK] LUGARES procesado: layout_places cols A,B,F -> A,B,C con ID directo en F y BUSCARX en G")
+    print("[OK] LUGARES procesado: ID Lugar, Nombre Lugar y Código Retailer -> A,B,C por nombre")
     print("[OK] CADENA CANAL FORMATO procesado: hojas Formatos, Cadenas, Canales copiadas")
     print("[OK] FORMATOS procesado: datos y fórmulas completados")
     print("[OK] CONFIGURACIÓN DE ANAQUEL procesado: 4 cols insertadas, datos de FORMATOS/LUGARES/PRODUCTOS copiados")
@@ -1946,5 +1923,4 @@ def procesar_matriz(ruta_matriz, ruta_layout_products, ruta_layout_places, ruta_
     print("[OK] Formato 4770 ajustado (CU-DG=1, CD=1, CJ-CT limpio)")
     
     return True
-
 

@@ -1,0 +1,12 @@
+{
+  "fecha": "2026-08-03 17:46:03",
+  "total": 2,
+  "exitosos": [],
+  "ignorados": [
+    "Canal=AUTOSERVICIOS | Cadena=CHEDRAUI | Formato=02 CHEDRAUI AB"
+  ],
+  "fallidos": {
+    "Canal=AUTOSERVICIOS | Cadena=CHEDRAUI | Formato=03 CHEDRAUI AB": "No se encontro tarjeta que coincida con Canal/Cadena/Formato."
+  },
+  "archivo_resultado": "C:\\Users\\katoH\\OneDrive\\Documentos\\Proyectos personales\\Automatizaciones storecheck L2\\docs\\runs\\20260803_174603_automatizacion5_seleccion.json"
+}

@@ -1,0 +1,12 @@
+{
+  "fecha": "2026-08-03 17:27:39",
+  "total": 3,
+  "exitosos": [],
+  "ignorados": [],
+  "fallidos": {
+    "Canal=CONVENIENCIA | Cadena=SUPER Q | Formato=CONVENIENCIA": "El backend respondio 500: The format cannot be removed",
+    "Canal=FARMACIA | Cadena=EQUILIBRIO FARMACEUTICO | Formato=EQUILIBRIO FARMACEUTICO": "El backend respondio 500: The format cannot be removed",
+    "Canal=DROGUEROS | Cadena=BAZAR | Formato=BAZAR": "El backend respondio 500: The format cannot be removed"
+  },
+  "archivo_resultado": "C:\\Users\\katoH\\OneDrive\\Documentos\\Proyectos personales\\Automatizaciones storecheck L2\\docs\\runs\\20260803_172739_automatizacion5_seleccion.json"
+}
